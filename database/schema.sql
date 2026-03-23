@@ -27,12 +27,24 @@ CREATE TABLE blood_requests (
     blood_type ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-') NOT NULL,
     city VARCHAR(100) NOT NULL,
     hospital VARCHAR(150) NOT NULL,
-    needed_by_date DATE NULL,
     contact_name VARCHAR(150) NOT NULL,
     contact_phone VARCHAR(20) NOT NULL,
     description TEXT NULL,
     status ENUM('active', 'fulfilled', 'closed') DEFAULT 'active',
+    required_units_count INT NOT NULL DEFAULT 1,
+    fulfilled_units_count INT NOT NULL DEFAULT 0,
     created_by INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
+
+CREATE TABLE request_responses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    request_id INT NOT NULL,
+    donor_user_id INT NOT NULL,
+    response_status ENUM('pending', 'confirmed') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES blood_requests(id) ON DELETE CASCADE,
+    FOREIGN KEY (donor_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
