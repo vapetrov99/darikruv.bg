@@ -1,5 +1,6 @@
+#version: '3.8'
+#
 services:
-
   nginx:
     image: nginx:latest
     ports:
@@ -22,5 +23,16 @@ services:
       MYSQL_DATABASE: darikruv
     ports:
       - "3306:3306"
-    volumes:
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+    depends_on:
+      - mysql

@@ -1,30 +1,20 @@
 <?php
 
-// All responses from this file are JSON (UTF-8), regardless of route.
 header('Content-Type: application/json; charset=utf-8');
 
-// Creates $pdo (PDO connection object) from src/config/database.php.
 require_once __DIR__ . '/../config/database.php';
 
-// Basic router inputs:
-// - $method comes from HTTP verb (GET/POST/...).
-// - $route comes from query string: /api/index.php?route=...
 $method = $_SERVER['REQUEST_METHOD'];
 $route = $_GET['route'] ?? '';
 
-// GET /api/?route=users
-// Returns a list of users ordered by newest first.
 if ($method === 'GET' && $route === 'users') {
     try {
-        // Direct SELECT query (no external parameters in this query).
         $stmt = $pdo->query("
-            SELECT id, first_name, last_name, email, phone, role, created_at
+            SELECT id, first_name, last_name, email, phone, city, role, created_at
             FROM users
             ORDER BY id DESC
         ");
 
-        // fetchAll() returns an array of associative arrays:
-        // [ ['id' => ..., 'first_name' => ...], ... ]
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode([
@@ -32,6 +22,7 @@ if ($method === 'GET' && $route === 'users') {
             'data' => $users
         ], JSON_UNESCAPED_UNICODE);
 
+        exit;
     } catch (PDOException $e) {
         http_response_code(500);
 
@@ -40,34 +31,34 @@ if ($method === 'GET' && $route === 'users') {
             'message' => 'Failed to fetch users',
             'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
-    }
 
-    exit;
+        exit;
+    }
 }
 
-// POST /api/?route=register
-// Reads JSON body, validates input, creates a new user, returns created user info.
 if ($method === 'POST' && $route === 'register') {
     try {
-        // php://input = raw request body; json_decode(..., true) => associative array.
         $input = json_decode(file_get_contents('php://input'), true);
 
-        // Normalize input:
-        // - trim() removes extra spaces around text fields.
-        // - ?? sets default value when key is missing.
         $firstName = trim($input['first_name'] ?? '');
         $lastName = trim($input['last_name'] ?? '');
         $email = trim($input['email'] ?? '');
         $password = $input['password'] ?? '';
         $phone = trim($input['phone'] ?? '');
-        $role = trim($input['role'] ?? 'donor');
+        $city = trim($input['city'] ?? '');
+        $isDonor = (bool)($input['is_donor'] ?? false);
+        $verificationToken = bin2hex(random_bytes(32)); //Mail verification
 
-        // Required field validation.
+        $bloodType = trim($input['blood_type'] ?? '');
+        $lastDonationDate = trim($input['last_donation_date'] ?? '');
+        $isAvailable = isset($input['is_available']) ? (bool)$input['is_available'] : true;
+
         if (
             $firstName === '' ||
             $lastName === '' ||
             $email === '' ||
-            $password === ''
+            $password === '' ||
+            $city === ''
         ) {
             http_response_code(400);
 
@@ -79,7 +70,6 @@ if ($method === 'POST' && $route === 'register') {
             exit;
         }
 
-        // Validate email format.
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             http_response_code(400);
 
@@ -91,7 +81,6 @@ if ($method === 'POST' && $route === 'register') {
             exit;
         }
 
-        // Simple password length rule.
         if (strlen($password) < 6) {
             http_response_code(400);
 
@@ -103,26 +92,32 @@ if ($method === 'POST' && $route === 'register') {
             exit;
         }
 
-        // Restrict role to known values.
-        $allowedRoles = ['admin', 'donor', 'requester'];
+        $allowedBloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-        if (!in_array($role, $allowedRoles, true)) {
+        if ($isDonor && !in_array($bloodType, $allowedBloodTypes, true)) {
             http_response_code(400);
 
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Invalid role'
+                'message' => 'Valid blood type is required for donors'
             ], JSON_UNESCAPED_UNICODE);
 
             exit;
         }
 
-        // Prepared statement + named parameter (:email) to safely query by email.
-        $checkStmt = $pdo->prepare("SELECT id FROM users WHERE email = :email LIMIT 1");
-        $checkStmt->execute([':email' => $email]);
+        $checkStmt = $pdo->prepare("
+            SELECT id
+            FROM users
+            WHERE email = :email
+            LIMIT 1
+        ");
+
+        $checkStmt->execute([
+            ':email' => $email
+        ]);
+
         $existingUser = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
-        // Conflict if email already exists.
         if ($existingUser) {
             http_response_code(409);
 
@@ -134,23 +129,55 @@ if ($method === 'POST' && $route === 'register') {
             exit;
         }
 
-        // Store hashed password, never plain text.
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $pdo->beginTransaction();
 
-        // Insert user record.
-        $insertStmt = $pdo->prepare("
-            INSERT INTO users (first_name, last_name, email, password, phone, role)
-            VALUES (:first_name, :last_name, :email, :password, :phone, :role)
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT); //Password hash
+        $verificationToken = bin2hex(random_bytes(32)); //Code gen for the verif token
+        $role = $isDonor ? 'donor' : 'requester';
+        
+
+        $insertUserStmt = $pdo->prepare("
+            INSERT INTO users (first_name, last_name, email, password, phone, city, role, is_verified, verification_token)
+            VALUES (:first_name, :last_name, :email, :password, :phone, :city, :role, :is_verified, :verification_token)
         ");
 
-        $insertStmt->execute([
+        $insertUserStmt->execute([
             ':first_name' => $firstName,
             ':last_name' => $lastName,
             ':email' => $email,
             ':password' => $hashedPassword,
             ':phone' => $phone !== '' ? $phone : null,
-            ':role' => $role
+            ':city' => $city,
+            ':role' => $role,
+            ':is_verified' => 0,
+            ':verification_token' => $verificationToken
         ]);
+        
+
+        $userId = (int)$pdo->lastInsertId();
+
+        //Cuz I don't have mail i will set this link for testing only
+        $verificationLink = "http://localhost:8080/api/index.php?route=verify_email&token=" . $verificationToken; 
+
+        if ($isDonor) {
+            if ($lastDonationDate === '') {
+                $lastDonationDate = null;
+            }
+
+            $insertDonorStmt = $pdo->prepare("
+                INSERT INTO donors (user_id, blood_type, last_donation_date, is_available)
+                VALUES (:user_id, :blood_type, :last_donation_date, :is_available)
+            ");
+
+            $insertDonorStmt->execute([
+                ':user_id' => $userId,
+                ':blood_type' => $bloodType,
+                ':last_donation_date' => $lastDonationDate,
+                ':is_available' => $isAvailable ? 1 : 0
+            ]);
+        }
+
+        $pdo->commit();
 
         http_response_code(201);
 
@@ -158,17 +185,24 @@ if ($method === 'POST' && $route === 'register') {
             'status' => 'success',
             'message' => 'User registered successfully',
             'data' => [
-                // lastInsertId() is the auto-generated ID of the inserted row.
-                'id' => $pdo->lastInsertId(),
+                'id' => $userId,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'email' => $email,
                 'phone' => $phone,
-                'role' => $role
+                'city' => $city,
+                'role' => $role,
+                'is_donor' => $isDonor,
+                'verification_link' => $verificationLink
             ]
         ], JSON_UNESCAPED_UNICODE);
 
+        exit;
     } catch (PDOException $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
         http_response_code(500);
 
         echo json_encode([
@@ -176,13 +210,92 @@ if ($method === 'POST' && $route === 'register') {
             'message' => 'Registration failed',
             'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
-    }
 
-    exit;
+        exit;
+    }
 }
 
-// POST /api/?route=login
-// Validates credentials and returns user data (without password hash).
+//Mail verification 
+if ($method === 'GET' && $route === 'verify_email') {
+    try {
+        $token = trim($_GET['token'] ?? '');
+
+        if ($token === '') {
+            http_response_code(400);
+
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Verification token is required'
+            ], JSON_UNESCAPED_UNICODE);
+
+            exit;
+        }
+
+        $stmt = $pdo->prepare("
+            SELECT id, email, is_verified
+            FROM users
+            WHERE verification_token = :token
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            ':token' => $token
+        ]);
+
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            http_response_code(404);
+
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Invalid or expired verification token'
+            ], JSON_UNESCAPED_UNICODE);
+
+            exit;
+        }
+
+        if ((int)$user['is_verified'] === 1) {
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Email is already verified'
+            ], JSON_UNESCAPED_UNICODE);
+
+            exit;
+        }
+
+        $updateStmt = $pdo->prepare("
+            UPDATE users
+            SET is_verified = 1,
+                verification_token = NULL,
+                verified_at = CURRENT_TIMESTAMP
+            WHERE id = :id
+        ");
+
+        $updateStmt->execute([
+            ':id' => $user['id']
+        ]);
+
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Email verified successfully'
+        ], JSON_UNESCAPED_UNICODE);
+
+        exit;
+
+    } catch (PDOException $e) {
+        http_response_code(500);
+
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Email verification failed',
+            'error' => $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+
+        exit;
+    }
+}
+
 if ($method === 'POST' && $route === 'login') {
     try {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -212,9 +325,8 @@ if ($method === 'POST' && $route === 'login') {
             exit;
         }
 
-        // Find user by email (at most one due to unique email constraint).
         $stmt = $pdo->prepare("
-            SELECT id, first_name, last_name, email, password, phone, role, created_at
+            SELECT id, first_name, last_name, email, password, phone, city, role, created_at, is_verified
             FROM users
             WHERE email = :email
             LIMIT 1
@@ -226,7 +338,7 @@ if ($method === 'POST' && $route === 'login') {
 
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$user) {
+        if (!$user || !password_verify($password, $user['password'])) {
             http_response_code(401);
 
             echo json_encode([
@@ -237,19 +349,18 @@ if ($method === 'POST' && $route === 'login') {
             exit;
         }
 
-        // Compare plain password with hashed password from DB.
-        if (!password_verify($password, $user['password'])) {
-            http_response_code(401);
+        //Mail verification check
+        if ((int)$user['is_verified'] !== 1) {
+            http_response_code(403);
 
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Invalid email or password'
+                'message' => 'Please verify your email before logging in'
             ], JSON_UNESCAPED_UNICODE);
 
-            exit;
+             exit;
         }
 
-        // Remove password hash before returning user object.
         unset($user['password']);
 
         echo json_encode([
@@ -259,13 +370,54 @@ if ($method === 'POST' && $route === 'login') {
         ], JSON_UNESCAPED_UNICODE);
 
         exit;
-
     } catch (PDOException $e) {
         http_response_code(500);
 
         echo json_encode([
             'status' => 'error',
             'message' => 'Login failed',
+            'error' => $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+
+        exit;
+    }
+}
+
+if ($method === 'GET' && $route === 'donors') {
+    try {
+        $stmt = $pdo->query("
+            SELECT
+                d.id,
+                d.user_id,
+                d.blood_type,
+                d.last_donation_date,
+                d.is_available,
+                d.created_at,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.phone,
+                u.city,
+                u.role
+            FROM donors d
+            INNER JOIN users u ON d.user_id = u.id
+            ORDER BY d.created_at DESC
+        ");
+
+        $donors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $donors
+        ], JSON_UNESCAPED_UNICODE);
+
+        exit;
+    } catch (PDOException $e) {
+        http_response_code(500);
+
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Failed to fetch donors',
             'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
 
@@ -429,7 +581,8 @@ if ($method === 'GET' && $route === 'requests') {
                 contact_phone,
                 description,
                 status,
-                required_donors_count,
+                required_units_count,
+                fulfilled_units_count,
                 created_by,
                 created_at
             FROM blood_requests

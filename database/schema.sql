@@ -5,7 +5,11 @@ CREATE TABLE users (
     email VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
-    role ENUM('admin', 'donor', 'requester') DEFAULT 'donor',
+    city VARCHAR(100) NOT NULL,
+    role ENUM('admin', 'donor', 'requester') DEFAULT 'requester',
+    is_verified BOOLEAN DEFAULT FALSE, /*Mail verif*/
+    verification_token VARCHAR(255) NULL,
+    verified_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -13,10 +17,8 @@ CREATE TABLE donors (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     blood_type ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-') NOT NULL,
-    city VARCHAR(100) NOT NULL,
     last_donation_date DATE NULL,
     is_available BOOLEAN DEFAULT TRUE,
-    notes TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -47,4 +49,3 @@ CREATE TABLE request_responses (
     FOREIGN KEY (request_id) REFERENCES blood_requests(id) ON DELETE CASCADE,
     FOREIGN KEY (donor_user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
