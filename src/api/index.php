@@ -3,6 +3,7 @@
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ .'/../services/MailServices.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $route = $_GET['route'] ?? '';
@@ -157,7 +158,10 @@ if ($method === 'POST' && $route === 'register') {
         $userId = (int)$pdo->lastInsertId();
 
         //Cuz I don't have mail i will set this link for testing only
-        $verificationLink = "http://localhost:8080/api/index.php?route=verify_email&token=" . $verificationToken; 
+        $verificationLink = "http://localhost:8080/api/index.php?route=verify_email&token=" . $verificationToken;
+        $mailService = new MailService();
+        $mailSent = $mailService->sendVerificationEmail($email, $firstName . ' ' . $lastName, $verificationLink);
+        
 
         if ($isDonor) {
             if ($lastDonationDate === '') {
@@ -586,6 +590,7 @@ if ($method === 'GET' && $route === 'requests') {
                 created_by,
                 created_at
             FROM blood_requests
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 2 DAY)
             ORDER BY created_at DESC
         ");
 
