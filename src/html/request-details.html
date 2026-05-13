@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детайли за заявка</title>
+    <link rel="stylesheet" href="../css/style_test1.css">
+    <link rel="stylesheet" href="../css/request-details.css">
+</head>
+<body>
+
+<header class="header">
+    <div class="container nav-container">
+        <h1 class="logo">Кръводарители</h1>
+        <nav class="nav">
+            <a href="welcome_test1.html">Начало</a>
+            <a href="request.html">Заявки</a>
+            <a href="donors.html">Дарители</a>
+            <a href="register.html">Регистрация</a>
+            <a href="login.html" class="btn btn-nav">Вход</a>
+        </nav>
+    </div>
+</header>
+
+<main class="request-details-page">
+    <div class="container">
+        <a href="request.html" class="back-link">← Назад към заявките</a>
+
+        <div class="details-layout">
+            <section class="details-main">
+                <div class="details-card">
+                    <div class="details-header">
+                        <div>
+                            <h2 id="patientName">Име на пациент</h2>
+                            <p id="createdAt">Публикувана на: --</p>
+                        </div>
+
+                        <span id="bloodType" class="blood-badge">A+</span>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span>Град</span>
+                            <strong id="city">--</strong>
+                        </div>
+
+                        <div class="detail-item">
+                            <span>Болница</span>
+                            <strong id="hospital">--</strong>
+                        </div>
+
+                        <div class="detail-item">
+                            <span>Лице за контакт</span>
+                            <strong id="contactName">--</strong>
+                        </div>
+
+                        <div class="detail-item">
+                            <span>Телефон</span>
+                            <strong id="contactPhone">--</strong>
+                        </div>
+                    </div>
+
+                    <div class="description-box">
+                        <h3>Описание</h3>
+                        <p id="description">Няма допълнително описание.</p>
+                    </div>
+
+                    <div class="progress-box">
+                        <div class="progress-top">
+                            <h3>Напредък</h3>
+                            <span id="progressText">0 / 1 банки</span>
+                        </div>
+
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="details-side">
+                <div class="contact-card">
+                    <h3>Искаш да помогнеш?</h3>
+                    <p>Свържи се с лицето за контакт и уточни кога можеш да дариш кръв.</p>
+                    <a id="callButton" href="#" class="btn contact-btn">Обади се</a>
+                </div>
+            </aside>
+        </div>
+
+        <section class="comments-section">
+            <div class="comments-header">
+                <h2>Коментари</h2>
+                <p>Тук могат да се публикуват уточнения, въпроси или информация за заявката.</p>
+            </div>
+
+            <form id="commentForm" class="comment-form">
+                <div class="form-group">
+                    <label for="commentName">Име</label>
+                    <input type="text" id="commentName" name="comment_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="commentText">Коментар</label>
+                    <textarea id="commentText" name="comment_text" rows="4" required></textarea>
+                </div>
+
+                <button type="submit" class="btn">Публикувай коментар</button>
+            </form>
+
+            <div id="commentsList" class="comments-list">
+                <!-- Коментарите ще се зареждат от JS/API -->
+            </div>
+
+            <p id="noCommentsMessage" class="no-comments">
+                Все още няма коментари към тази заявка.
+            </p>
+        </section>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <p>&copy; 2026 Кръводарители. Всички права запазени.</p>
+    </div>
+</footer>
+
+<script src="../js/request-details.js"></script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>Дари Кръв</title>
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #fff5f5, #ffeaea);
+  font-family: Arial, sans-serif;
+}
+
+/* Контейнер */
+.logo-wrapper {
+  text-align: center;
+}
+
+/* Сцена */
+.scene {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: auto;
+}
+
+/* 💧 НОВА КАПКА (SVG, но със старата анимация) */
+.drop {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  transform: translateX(-50%);
+  animation: dropFall 3s infinite ease-in-out;
+}
+
+/* 💥 удар */
+.impact {
+  position: absolute;
+  left: 50%;
+  bottom: 60px;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(214,40,40,0.4);
+  border-radius: 50%;
+  transform: translateX(-50%) scale(0);
+  animation: impact 3s infinite;
+}
+
+/* ❤️ СЪЩИТЕ СЪРЦА (НЕ ПИПАНИ) */
+.heart {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: #ff4d6d;
+  transform: rotate(-45deg) scale(0);
+  opacity: 0;
+}
+
+.heart::before,
+.heart::after {
+  content: "";
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: #ff4d6d;
+  border-radius: 50%;
+}
+
+.heart::before {
+  top: -15px;
+  left: 0;
+}
+
+.heart::after {
+  left: 15px;
+  top: 0;
+}
+
+.left {
+  left: 50px;
+  bottom: 50px;
+  animation: heartLeft 3s infinite;
+}
+
+.right {
+  right: 50px;
+  bottom: 50px;
+  animation: heartRight 3s infinite;
+}
+
+/* текст */
+.text {
+  margin-top: 30px;
+  font-size: 28px;
+  font-weight: bold;
+  color: #b71c1c;
+  opacity: 0;
+  animation: textAnim 3s infinite;
+}
+
+/* АНИМАЦИИ (същите като преди) */
+
+@keyframes dropFall {
+  0% {
+    top: 10px;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  45% {
+    top: 110px;
+  }
+  55% {
+    opacity: 0;
+  }
+  100% {
+    top: 110px;
+    opacity: 0;
+  }
+}
+
+@keyframes impact {
+  0%,40% {
+    transform: translateX(-50%) scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  70% {
+    transform: translateX(-50%) scale(3);
+    opacity: 0;
+  }
+}
+
+@keyframes heartLeft {
+  0%,50% {
+    opacity: 0;
+    transform: rotate(-45deg) scale(0);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-45deg) scale(1) translate(-10px,-10px);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-45deg) scale(0.6) translate(-20px,-30px);
+  }
+}
+
+@keyframes heartRight {
+  0%,50% {
+    opacity: 0;
+    transform: rotate(-45deg) scale(0);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-45deg) scale(1) translate(10px,-10px);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-45deg) scale(0.6) translate(20px,-30px);
+  }
+}
+
+@keyframes textAnim {
+  0%,60% {
+    opacity: 0;
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="logo-wrapper">
+  <div class="scene">
+
+    <!-- 💧 SVG капка (но без да пипаме останалото) -->
+    <svg class="drop" width="50" height="60" viewBox="0 0 24 24">
+      <path fill="#d62828" d="M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0C19 10 12 2 12 2z"/>
+    </svg>
+
+    <div class="impact"></div>
+    <div class="heart left"></div>
+    <div class="heart right"></div>
+
+  </div>
+
+  <div class="text">Дари Кръв</div>
+</div>
+
+</body>
+</html>

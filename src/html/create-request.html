@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Създай заявка</title>
+    <link rel="stylesheet" href="../css/style_test1.css">
+    <link rel="stylesheet" href="../css/create-request.css">
+</head>
+<body>
+
+<header class="header">
+    <div class="container nav-container">
+        <h1 class="logo">Кръводарители</h1>
+        <nav class="nav">
+            <a href="index.html">Начало</a>
+            <a href="request.html">Заявки</a>
+            <a href="donors.html">Дарители</a>
+            <a href="register.html">Регистрация</a>
+            <a href="login.html" class="btn btn-nav">Вход</a>
+        </nav>
+    </div>
+</header>
+
+<main class="create-request-page">
+    <div class="container">
+        <div class="form-wrapper">
+            <div class="form-header">
+                <h2>Създай заявка за кръв</h2>
+                <p>Попълни информацията, за да публикуваш нова активна заявка.</p>
+            </div>
+
+            <form id="createRequestForm" class="request-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="patientName">Име на пациент *</label>
+                        <input type="text" id="patientName" name="patient_name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bloodType">Кръвна група *</label>
+                        <select id="bloodType" name="blood_type" required>
+                            <option value="">Избери кръвна група</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">Град *</label>
+                        <select id="city" name="city" required>
+                            <option value="">Избери град</option>
+                            <option value="София">София</option>
+                            <option value="Пловдив">Пловдив</option>
+                            <option value="Варна">Варна</option>
+                            <option value="Бургас">Бургас</option>
+                            <option value="Русе">Русе</option>
+                            <option value="Стара Загора">Стара Загора</option>
+                            <option value="Плевен">Плевен</option>
+                            <option value="Сливен">Сливен</option>
+                            <option value="Добрич">Добрич</option>
+                            <option value="Шумен">Шумен</option>
+                            <option value="Перник">Перник</option>
+                            <option value="Хасково">Хасково</option>
+                            <option value="Ямбол">Ямбол</option>
+                            <option value="Пазарджик">Пазарджик</option>
+                            <option value="Благоевград">Благоевград</option>
+                            <option value="Велико Търново">Велико Търново</option>
+                            <option value="Враца">Враца</option>
+                            <option value="Габрово">Габрово</option>
+                            <option value="Кърджали">Кърджали</option>
+                            <option value="Кюстендил">Кюстендил</option>
+                            <option value="Ловеч">Ловеч</option>
+                            <option value="Монтана">Монтана</option>
+                            <option value="Разград">Разград</option>
+                            <option value="Силистра">Силистра</option>
+                            <option value="Смолян">Смолян</option>
+                            <option value="Търговище">Търговище</option>
+                            <option value="Видин">Видин</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="hospital">Болница *</label>
+                        <input type="text" id="hospital" name="hospital" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contactName">Лице за контакт *</label>
+                        <input type="text" id="contactName" name="contact_name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contactPhone">Телефон за контакт *</label>
+                        <input type="tel" id="contactPhone" name="contact_phone" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="requiredUnits">Необходими банки кръв *</label>
+                        <input type="number" id="requiredUnits" name="required_units_count" min="1" value="1" required>
+                    </div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="description">Описание</label>
+                    <textarea id="description" name="description" rows="5" placeholder="Добави допълнителна информация за заявката..."></textarea>
+                </div>
+
+                <div id="formMessage" class="form-message"></div>
+
+                <div class="form-actions">
+                    <a href="request.html" class="btn btn-outline">Назад</a>
+                    <button type="submit" class="btn submit-btn">Публикувай заявка</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <p>&copy; 2026 Кръводарители. Всички права запазени.</p>
+    </div>
+</footer>
+
+<script src="../js/create-request.js"></script>
+</body>
+</html>

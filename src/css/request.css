@@ -1,0 +1,263 @@
+.requests-page {
+    padding: 60px 0;
+    background: #f8f9fa;
+    min-height: 80vh;
+}
+
+/* По-широк контейнер само за тази страница */
+.requests-page .container {
+    max-width: 1400px;
+}
+
+/* HEADER */
+.requests-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 25px;
+    margin-bottom: 35px;
+    flex-wrap: wrap;
+}
+
+.requests-header h2 {
+    font-size: 36px;
+    color: #c62828;
+    margin-bottom: 8px;
+}
+
+.requests-header p {
+    font-size: 18px;
+    color: #555;
+}
+
+.create-request-btn {
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* MAIN LAYOUT */
+.requests-layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 30px;
+    align-items: start;
+}
+
+/* SIDEBAR */
+.cities-sidebar {
+    background: #fff;
+    padding: 22px;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    max-height: 650px;
+    overflow-y: auto;
+
+    /* стои фиксирано при скрол */
+    position: sticky;
+    top: 20px;
+}
+
+.cities-sidebar h3 {
+    color: #c62828;
+    margin-bottom: 18px;
+    font-size: 22px;
+}
+
+/* CITY BUTTONS */
+.city-btn {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border: 1px solid #eee;
+    background: #fff;
+    border-radius: 10px;
+    text-align: left;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.25s;
+
+    /* да не се чупи текста */
+    white-space: nowrap;
+}
+
+.city-btn:hover {
+    background: #fff5f5;
+    color: #c62828;
+}
+
+.city-btn.active {
+    background: #c62828;
+    color: #fff;
+    border-color: #c62828;
+}
+
+/* RIGHT SIDE */
+.requests-content {
+    background: #fff;
+    padding: 28px;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    min-height: 500px;
+    width: 100%;
+}
+
+/* SELECTED CITY */
+.selected-city-box {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 18px;
+    margin-bottom: 25px;
+}
+
+.selected-city-box h3 {
+    color: #c62828;
+    font-size: 28px;
+    margin-bottom: 5px;
+}
+
+.selected-city-box p {
+    color: #666;
+}
+
+/* REQUEST GRID */
+.requests-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+}
+
+/* CARD */
+.request-card {
+    border: 1px solid #eee;
+    border-left: 5px solid #c62828;
+    border-radius: 14px;
+    padding: 22px;
+    background: #fffafa;
+    transition: 0.25s;
+    width: 100%;
+}
+
+.request-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.request-card h4 {
+    font-size: 22px;
+    color: #222;
+    margin-bottom: 10px;
+}
+
+/* BADGES */
+.request-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.request-badge {
+    background: #c62828;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 14px;
+}
+
+/* TEXT */
+.request-card p {
+    color: #555;
+    margin-bottom: 10px;
+}
+
+.request-date {
+    font-size: 14px;
+    color: #777;
+}
+
+.request-timer {
+    display: block;
+    margin-top: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #c62828;
+}
+
+/* EMPTY MESSAGE */
+.empty-message {
+    display: none;
+    text-align: center;
+    margin-top: 60px;
+    font-size: 22px;
+    color: #777;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+    .requests-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .cities-sidebar {
+        position: static;
+        max-height: 300px;
+    }
+
+    .city-btn {
+        text-align: left;
+    }
+
+    .requests-header {
+        text-align: center;
+        justify-content: center;
+    }
+}
+
+/* STATUS */
+.request-status {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.request-status.active {
+    background: #e53935;
+    color: white;
+}
+
+.request-status.fulfilled {
+    background: #43a047;
+    color: white;
+}
+
+.request-status.closed {
+    background: #757575;
+    color: white;
+}
+
+/* CITY badge */
+.request-badge.city {
+    background: #1976d2;
+}
+
+/* PROGRESS */
+.request-progress {
+    margin-top: 12px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #eee;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #c62828;
+    transition: width 0.3s;
+}

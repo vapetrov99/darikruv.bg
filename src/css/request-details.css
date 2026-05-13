@@ -1,0 +1,267 @@
+.request-details-page {
+    padding: 60px 0;
+    background: #f8f9fa;
+    min-height: 80vh;
+}
+
+.request-details-page .container {
+    max-width: 1200px;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 24px;
+    color: #c62828;
+    font-weight: bold;
+}
+
+.details-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 28px;
+    align-items: start;
+}
+
+.details-card,
+.contact-card,
+.comments-section {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.details-card {
+    padding: 32px;
+}
+
+.details-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: flex-start;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 22px;
+    margin-bottom: 24px;
+}
+
+.details-header h2 {
+    font-size: 34px;
+    color: #222;
+    margin-bottom: 8px;
+}
+
+.details-header p {
+    color: #777;
+}
+
+.blood-badge {
+    background: #c62828;
+    color: #fff;
+    min-width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 0 6px 15px rgba(198, 40, 40, 0.25);
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    margin-bottom: 28px;
+}
+
+.detail-item {
+    background: #fffafa;
+    border: 1px solid #eee;
+    border-radius: 14px;
+    padding: 18px;
+}
+
+.detail-item span {
+    display: block;
+    color: #777;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+.detail-item strong {
+    color: #222;
+    font-size: 17px;
+}
+
+.description-box {
+    margin-bottom: 28px;
+}
+
+.description-box h3,
+.progress-box h3,
+.contact-card h3,
+.comments-header h2 {
+    color: #c62828;
+    margin-bottom: 10px;
+}
+
+.description-box p {
+    color: #555;
+    line-height: 1.7;
+}
+
+.progress-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.progress-top span {
+    color: #555;
+    font-weight: bold;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 12px;
+    background: #eee;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #c62828;
+    transition: width 0.3s ease;
+}
+
+.contact-card {
+    padding: 26px;
+    position: sticky;
+    top: 20px;
+}
+
+.contact-card p {
+    color: #555;
+    margin-bottom: 20px;
+}
+
+.contact-btn {
+    width: 100%;
+    text-align: center;
+}
+
+.comments-section {
+    margin-top: 32px;
+    padding: 32px;
+}
+
+.comments-header {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+}
+
+.comments-header p {
+    color: #666;
+}
+
+.comment-form {
+    display: grid;
+    gap: 18px;
+    margin-bottom: 28px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 13px 15px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: inherit;
+    outline: none;
+    transition: 0.25s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: #c62828;
+    box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.12);
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+.comments-list {
+    display: grid;
+    gap: 16px;
+}
+
+.comment-card {
+    background: #fffafa;
+    border: 1px solid #eee;
+    border-radius: 14px;
+    padding: 18px;
+}
+
+.comment-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.comment-card strong {
+    color: #222;
+}
+
+.comment-card span {
+    color: #777;
+    font-size: 14px;
+}
+
+.comment-card p {
+    color: #555;
+    line-height: 1.6;
+}
+
+.no-comments {
+    display: none;
+    text-align: center;
+    color: #777;
+    font-size: 18px;
+    margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+    .details-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .contact-card {
+        position: static;
+    }
+
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .details-header {
+        flex-direction: column;
+    }
+}

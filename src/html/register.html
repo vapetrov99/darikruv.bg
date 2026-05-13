@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация - DariKruv</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Регистрация</h1>
+
+        <form id="registerForm" class="card">
+            <label>Име</label>
+            <input type="text" id="first_name" required>
+
+            <label>Фамилия</label>
+            <input type="text" id="last_name" required>
+
+            <label>Email</label>
+            <input type="email" id="email" required>
+
+            <label>Парола</label>
+            <input type="password" id="password" required>
+
+            <label>Телефон</label>
+            <input type="text" id="phone">
+
+            <label>Град</label>
+            <input type="text" id="city" required>
+
+            <label class="checkbox-row">
+                <input type="checkbox" id="is_donor">
+                Искам да бъда донор
+            </label>
+
+            <div id="donorFields" class="hidden">
+                <label>Кръвна група</label>
+                <select id="blood_type">
+                    <option value="">Избери кръвна група</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                </select>
+
+                <label>Последно даряване</label>
+                <input type="date" id="last_donation_date">
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="is_available" checked>
+                    Наличен съм за даряване
+                </label>
+            </div>
+
+            <button type="submit">Регистрация</button>
+        </form>
+
+        <div id="message" class="message"></div>
+
+        <a class="link" href="welcome_test1.html">← Назад</a>
+    </div>
+
+    <script src="../js/register.js"></script>
+</body>
+</html>
