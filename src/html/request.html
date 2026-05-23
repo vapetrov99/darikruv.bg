@@ -13,11 +13,14 @@
     <div class="container nav-container">
         <h1 class="logo">Кръводарители</h1>
         <nav class="nav">
-            <a href="index.html">Начало</a>
+            <a href="welcome.html">Начало</a>
             <a href="request.html">Заявки</a>
-            <a href="donors.html">Дарители</a>
-            <a href="register.html">Регистрация</a>
-            <a href="login.html" class="btn btn-nav">Вход</a>
+            <a href="campaigns.html">Кампании</a>
+            <a href="faq.html">Въпроси и отговори</a>
+            <a href="privacy-policy.html">Правила</a>
+            <a href="register.html" class="guest-only">Регистрация</a>
+            <a href="login.html" class="btn btn-nav guest-only">Вход</a>
+            <a href="profile.html" class="auth-only">Профил</a>
         </nav>
     </div>
 </header>
@@ -34,6 +37,15 @@
                 Създай заявка
             </a>
         </div>
+
+        <section class="latest-requests-panel">
+            <div class="latest-requests-panel__header">
+                <h3>Последни заявки</h3>
+                <p>Всички активни заявки от последните 48 часа</p>
+            </div>
+            <div id="latestRequestsList" class="latest-requests-list"></div>
+            <p id="latestRequestsEmpty" class="latest-requests-empty">Няма активни заявки в момента.</p>
+        </section>
 
         <div class="requests-layout">
             <aside class="cities-sidebar">
@@ -92,6 +104,8 @@
     </div>
 </footer>
 
-<script src="../js/requests.js"></script>
+<script src="/js/auth-guard.js"></script>
+<script src="/js/request-respond.js"></script>
+<script src="/js/requests.js"></script>
 </body>
 </html>

@@ -1,27 +1,22 @@
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f6f8;
-    margin: 0;
-    padding: 0;
-}
+/* Auth forms (login / register) – scoped to main so header nav layout is unaffected */
 
-.container {
+main .container {
     max-width: 500px;
     margin: 40px auto;
     padding: 20px;
 }
 
-h1 {
+main h1 {
     text-align: center;
     color: #b30000;
 }
 
-p {
+main p {
     text-align: center;
     color: #444;
 }
 
-.card {
+main .card {
     background: white;
     padding: 20px;
     border-radius: 10px;
@@ -29,24 +24,24 @@ p {
     margin-top: 20px;
 }
 
-label {
+main label {
     display: block;
     margin-top: 12px;
     margin-bottom: 6px;
     font-weight: bold;
 }
 
-input,
-select,
-button {
+main input,
+main select,
+main button {
     width: 100%;
     padding: 10px;
     box-sizing: border-box;
     margin-bottom: 10px;
 }
 
-button,
-.button {
+main button,
+main .button {
     background-color: #b30000;
     color: white;
     border: none;
@@ -58,18 +53,18 @@ button,
     padding: 10px;
 }
 
-.button {
+main .button {
     margin-top: 10px;
 }
 
-.checkbox-row {
+main .checkbox-row {
     display: flex;
     align-items: center;
     gap: 10px;
     font-weight: normal;
 }
 
-.checkbox-row input {
+main .checkbox-row input {
     width: auto;
     margin: 0;
 }
@@ -78,7 +73,7 @@ button,
     display: none;
 }
 
-.message {
+main .message {
     margin-top: 20px;
     padding: 12px;
     border-radius: 6px;
@@ -87,7 +82,24 @@ button,
     min-height: 20px;
 }
 
-.link {
+main .field-error {
+    display: block;
+    color: #c62828;
+    font-size: 13px;
+    margin-top: -6px;
+    margin-bottom: 8px;
+}
+
+main .field-error.hidden {
+    display: none;
+}
+
+main input.input-error {
+    border: 2px solid #c62828;
+    outline: none;
+}
+
+main .link {
     display: inline-block;
     margin-top: 20px;
     color: #b30000;

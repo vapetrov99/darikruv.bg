@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * Shared PDO instance for the whole PHP app.
+ *
+ * In Docker Compose the MySQL service is typically named "mysql"; credentials here match dev defaults.
+ * For production, replace with environment-driven configuration and never commit real passwords.
+ */
+
 $host = 'mysql';
 $dbname = 'darikruv';
 $username = 'root';

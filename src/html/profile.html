@@ -1,0 +1,383 @@
+﻿<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Моят профил</title>
+    <link rel="stylesheet" href="../css/style_test1.css">
+    <link rel="stylesheet" href="../css/profile.css">
+</head>
+<body>
+
+<header class="header">
+    <div class="container nav-container">
+        <h1 class="logo">Кръводарители</h1>
+        <nav class="nav">
+            <a href="welcome.html">Начало</a>
+            <a href="request.html">Заявки</a>
+            <a href="campaigns.html">Кампании</a>
+            <a href="faq.html">Въпроси и отговори</a>
+            <a href="privacy-policy.html">Правила</a>
+            <a href="register.html" class="guest-only">Регистрация</a>
+            <a href="login.html" class="btn btn-nav guest-only">Вход</a>
+            <a href="profile.html" class="auth-only">Профил</a>
+        </nav>
+    </div>
+</header>
+
+<main class="profile-page">
+    <div class="container">
+        <div class="profile-header">
+            <h2>Моят профил</h2>
+            <p>Преглед на личната информация и активността ти в платформата.</p>
+        </div>
+
+        <section class="profile-layout">
+            <aside class="profile-sidebar">
+                <div class="profile-card">
+                    <div class="profile-avatar" id="profileInitials">КД</div>
+            
+                    <h3 id="profileName">Име Фамилия</h3>
+                    <p id="profileEmail">email@example.com</p>
+            
+                    <div class="profile-badges">
+                        <span id="profileBloodType">A+</span>
+                        <span id="profileCity">София</span>
+                    </div>
+            
+                    <button
+                        id="openEditProfileBtn"
+                        class="btn edit-profile-btn"
+                    >
+                        Редактирай профил
+                    </button>
+                    <button id="enableNotificationsBtn" class="btn notification-btn" type="button">
+                        Включи известия
+                    </button>
+                    <p id="notificationStatus" class="notification-status">Известията не са активирани.</p>
+
+                    <button
+                        id="openDeleteAccountBtn"
+                        type="button"
+                        class="btn delete-account-btn"
+                    >
+                        Изтрий профила
+                    </button>
+                </div>
+            
+                <div class="donation-calendar-card">
+                    <h3>Календар за даряване</h3>
+            
+                    <p class="calendar-help">
+                        Избери или промени датата на последното даряване (всеки ден до днес), след което натисни „Запази дата“.
+                    </p>
+            
+                    <div class="calendar-top">
+                        <button id="prevMonthBtn" class="calendar-nav-btn">‹</button>
+                        <strong id="calendarMonthTitle">Месец</strong>
+                        <button id="nextMonthBtn" class="calendar-nav-btn">›</button>
+                    </div>
+            
+                    <div class="calendar-weekdays">
+                        <span>Пн</span>
+                        <span>Вт</span>
+                        <span>Ср</span>
+                        <span>Чт</span>
+                        <span>Пт</span>
+                        <span>Сб</span>
+                        <span>Нд</span>
+                    </div>
+            
+                    <div id="donationCalendarGrid" class="donation-calendar-grid"></div>
+            
+                    <div class="donation-date-box last-donation-box">
+                        <span>Последно даряване</span>
+                        <strong id="lastDonationDate">--</strong>
+                    </div>
+
+                    <div class="donation-date-box next-donation-box">
+                        <span>Следващо възможно даряване</span>
+                        <strong id="nextDonationDate">--</strong>
+                    </div>
+            
+                    <div class="calendar-actions">
+                        <button type="button" id="todayMonthBtn" class="btn btn-outline calendar-action-btn">
+                            Днес
+                        </button>
+                        <button type="button" id="clearDonationDateBtn" class="btn btn-outline calendar-action-btn">
+                            Изчисти
+                        </button>
+                    </div>
+
+                    <button type="button" id="saveDonationDateBtn" class="btn save-donation-btn">
+                        Запази дата
+                    </button>
+                </div>
+            </aside>
+
+            <section class="profile-content">
+                <div class="info-grid">
+                    <div class="info-box">
+                        <span>Име</span>
+                        <strong id="infoName">--</strong>
+                    </div>
+
+                    <div class="info-box">
+                        <span>Имейл</span>
+                        <strong id="infoEmail">--</strong>
+                    </div>
+
+                    <div class="info-box">
+                        <span>Телефон</span>
+                        <strong id="infoPhone">--</strong>
+                    </div>
+
+                    <div class="info-box">
+                        <span>Град</span>
+                        <strong id="infoCity">--</strong>
+                    </div>
+
+                    <div class="info-box">
+                        <span>Кръвна група</span>
+                        <strong id="infoBloodType">--</strong>
+                    </div>
+
+                    <div class="info-box">
+                        <span>Роля</span>
+                        <strong id="infoRole">Потребител</strong>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Мои заявки</h3>
+                    <div id="myRequestsList" class="activity-list"></div>
+                    <p id="noMyRequests" class="empty-text">Нямаш публикувани заявки.</p>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Мои отзовавания</h3>
+                    <div id="myResponsesList" class="activity-list"></div>
+                    <p id="noMyResponses" class="empty-text">Все още не си се отзовал на заявка.</p>
+                </div>
+            </section>
+        </section>
+    </div>
+</main>
+
+<div id="editProfileModal" class="profile-modal">
+    <div class="profile-modal-content">
+
+        <div class="modal-header">
+            <h2>Редактиране на профил</h2>
+
+            <button id="closeEditProfileBtn">
+                ×
+            </button>
+        </div>
+
+        <form id="editProfileForm">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="editName">
+                        Име
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editName"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="editPhone">
+                        Телефон
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="editPhone"
+                    >
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="editEmail">
+                        Имейл
+                    </label>
+
+                    <input
+                        type="email"
+                        id="editEmail"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="editCity">
+                        Град
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editCity"
+                    >
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="editBloodType">
+                        Кръвна група
+                    </label>
+
+                    <select id="editBloodType">
+                        <option value="">Избери</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        Роля
+                    </label>
+                    <div class="profile-radio-group" role="radiogroup" aria-label="Роля">
+                        <label class="profile-radio-option">
+                            <input type="radio" name="editRole" value="requester">
+                            <span>Нуждаещ се</span>
+                        </label>
+                        <label class="profile-radio-option">
+                            <input type="radio" name="editRole" value="donor">
+                            <span>Кръводарител</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group donor-only-field" id="donorOnlyField">
+                <label>
+                    Наличност за даряване
+                </label>
+                <div class="profile-radio-group profile-radio-group--compact" role="radiogroup" aria-label="Наличност за даряване">
+                    <label class="profile-radio-option">
+                        <input type="radio" name="editDonorStatus" value="available">
+                        <span>Наличен за даряване</span>
+                    </label>
+
+                    <label class="profile-radio-option">
+                        <input type="radio" name="editDonorStatus" value="unavailable">
+                        <span>Временно недостъпен</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group donor-email-notify-field hidden" id="donorEmailNotifyField">
+                <label class="profile-inline-checkbox">
+                    <input type="checkbox" id="editEmailNotifications" checked>
+                    <span>Изпращай ми имейл при нова подходяща заявка за кръв</span>
+                </label>
+                <label class="profile-inline-checkbox">
+                    <input type="checkbox" id="editCampaignEmailNotifications">
+                    <span>Изпращай ми имейл при нова кръводарителска кампания</span>
+                </label>
+                <p class="profile-field-hint">
+                    Push известията се включват отделно с бутона „Включи известия“ в страничната лента.
+                </p>
+            </div>
+
+            <div class="modal-warning">
+                При промяна на имейл адрес ще бъде
+                изискана нова верификация.
+            </div>
+
+            <button type="submit" class="btn save-profile-btn">
+                Запази промените
+            </button>
+        </form>
+
+    </div>
+</div>
+
+<div id="deleteAccountModal" class="profile-modal delete-account-modal">
+    <div class="profile-modal-content">
+        <div class="modal-header">
+            <h2>Изтриване на профил</h2>
+            <button type="button" id="closeDeleteAccountBtn" aria-label="Затвори">×</button>
+        </div>
+
+        <form id="deleteAccountForm">
+            <div class="modal-danger-box">
+                <p><strong>Това действие е необратимо.</strong></p>
+                <p>Ще бъдат изтрити завинаги:</p>
+                <ul>
+                    <li>личният ти профил и данни за дарител</li>
+                    <li>публикуваните от теб заявки за кръв</li>
+                    <li>отзоваванията и push известията ти</li>
+                </ul>
+            </div>
+
+            <label class="delete-confirm-checkbox">
+                <input type="checkbox" id="deleteConfirmCheckbox" required>
+                Разбирам, че профилът ми ще бъде изтрит перманентно
+            </label>
+
+            <div class="form-group">
+                <label for="deleteConfirmPhrase">
+                    Напиши <strong>ИЗТРИЙ</strong> за потвърждение
+                </label>
+                <input
+                    type="text"
+                    id="deleteConfirmPhrase"
+                    autocomplete="off"
+                    placeholder="ИЗТРИЙ"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="deleteAccountPassword">Парола</label>
+                <input
+                    type="password"
+                    id="deleteAccountPassword"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <p id="deleteAccountError" class="delete-account-error hidden" role="alert"></p>
+
+            <div class="delete-account-actions">
+                <button type="button" id="cancelDeleteAccountBtn" class="btn btn-outline">
+                    Отказ
+                </button>
+                <button type="submit" id="confirmDeleteAccountBtn" class="btn delete-account-submit" disabled>
+                    Изтрий завинаги
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="container">
+        <p>&copy; 2026 Кръводарители. Всички права запазени.</p>
+    </div>
+</footer>
+
+<script src="../js/auth-guard.js"></script>
+<script src="../js/request-edit-utils.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
+<script src="../js/firebase-notifications.js"></script>
+<script src="../js/profile.js"></script>
+</body>
+</html>

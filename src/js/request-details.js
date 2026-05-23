@@ -1,24 +1,34 @@
+/**
+ * Single request view: loads request_details + request_comments, submits create_request_comment.
+ */
+
 document.addEventListener("DOMContentLoaded", () => {
+    if (!requireAuth()) {
+        return;
+    }
+    initAuthUI();
+
     const urlParams = new URLSearchParams(window.location.search);
     const requestId = Number(urlParams.get("id"));
+    const currentUser = getCurrentUser();
+    const commentAuthorName = getDisplayName(currentUser);
+    const isCurrentUserDonor = currentUser?.role === "donor";
+    const commentAuthorPhone = currentUser?.phone || "";
+    let comments = [];
 
-    let comments = [
-        {
-            request_id: 1,
-            name: "Петър",
-            text: "Мога да даря утре сутрин. Ще се свържа по телефона.",
-            created_at: "04.05.2026 12:30"
-        },
-        {
-            request_id: 1,
-            name: "Анна",
-            text: "Има ли значение в кой кръвен център да се дари?",
-            created_at: "04.05.2026 13:10"
-        }
-    ];
+    function buildTelHref(phone) {
+        const normalized = String(phone || "").replace(/[\s\-().]/g, "");
+        return normalized ? `tel:${normalized}` : "";
+    }
 
     const commentForm = document.getElementById("commentForm");
+    const commentAuthorPreview = document.getElementById("commentAuthorPreview");
     let currentRequestId = null;
+    let currentRequest = null;
+
+    if (commentAuthorPreview) {
+        commentAuthorPreview.textContent = `Публикуваш като: ${commentAuthorName}`;
+    }
 
     function showNotFound(message = "Заявката не е намерена") {
         document.querySelector(".details-card").innerHTML = `
@@ -34,7 +44,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const response = await fetch(`../api/index.php?route=request_details&id=${requestId}`);
+            const response = await fetch(getApiUrl("request_details", {
+                id: requestId,
+                user_id: currentUser?.id || undefined
+            }));
             const result = await response.json();
 
             if (!response.ok || result.status !== "success" || !result.data) {
@@ -43,40 +56,143 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const request = result.data;
             currentRequestId = Number(request.id);
+            currentRequest = request;
             renderRequest(request);
-            renderComments(currentRequestId);
+            setupEditButton(request);
+            setupRespondButton(request);
+            await loadComments(currentRequestId);
         } catch (error) {
             showNotFound(error.message || "Заявката не е намерена");
         }
     }
 
-    commentForm.addEventListener("submit", (event) => {
+    commentForm?.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         if (!currentRequestId) {
             return;
         }
 
-        const name = document.getElementById("commentName").value.trim();
         const text = document.getElementById("commentText").value.trim();
 
-        if (!name || !text) {
+        if (!text) {
             return;
         }
 
-        const newComment = {
-            request_id: currentRequestId,
-            name,
-            text,
-            created_at: new Date().toLocaleString("bg-BG")
-        };
+        try {
+            const response = await fetch(getApiUrl("create_request_comment"), {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    request_id: currentRequestId,
+                    name: commentAuthorName,
+                    is_donor: isCurrentUserDonor,
+                    contact_phone: isCurrentUserDonor ? commentAuthorPhone : "",
+                    text
+                })
+            });
+            const result = await response.json();
 
-        comments.unshift(newComment);
-        renderComments(currentRequestId);
-        commentForm.reset();
+            if (!response.ok || result.status !== "success") {
+                throw new Error(result.message || "Коментарът не беше записан.");
+            }
 
-        console.log("Нов коментар:", newComment);
+            await loadComments(currentRequestId);
+            commentForm.reset();
+        } catch (error) {
+            alert(error.message || "Възникна грешка при запис на коментар.");
+        }
     });
+
+    async function loadComments(targetRequestId) {
+        try {
+            const response = await fetch(getApiUrl("request_comments", { request_id: targetRequestId }));
+            const result = await response.json();
+
+            if (!response.ok || result.status !== "success") {
+                throw new Error(result.message || "Коментарите не могат да бъдат заредени.");
+            }
+
+            comments = Array.isArray(result.data) ? result.data : [];
+            renderComments(targetRequestId);
+        } catch (_error) {
+            comments = [];
+            renderComments(targetRequestId);
+        }
+    }
+
+    function setupRespondButton(request) {
+        const respondBtn = document.getElementById("respondBtn");
+        if (!respondBtn) {
+            return;
+        }
+
+        const showRespond = typeof canShowRespondButton === "function"
+            && canShowRespondButton(currentUser, request);
+        const config = showRespond && typeof getRespondButtonConfig === "function"
+            ? getRespondButtonConfig(request)
+            : { hidden: true };
+
+        if (config.hidden) {
+            respondBtn.hidden = true;
+        } else {
+            respondBtn.hidden = false;
+            respondBtn.textContent = config.text;
+            respondBtn.dataset.action = config.action;
+            respondBtn.disabled = Boolean(config.disabled);
+        }
+
+        respondBtn.onclick = async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (!currentRequestId || !respondBtn.dataset.action) {
+                return;
+            }
+
+            const originalText = respondBtn.textContent;
+            respondBtn.disabled = true;
+            respondBtn.textContent = "Изпращане...";
+
+            try {
+                const data = await submitRequestResponse(
+                    currentRequestId,
+                    respondBtn.dataset.action
+                );
+
+                if (data?.request?.status === "fulfilled") {
+                    alert("Заявката е изпълнена. Благодарим за помощта!");
+                    window.location.href = "request.html";
+                    return;
+                }
+
+                await loadRequest();
+            } catch (error) {
+                alert(error.message || "Възникна грешка.");
+                respondBtn.disabled = false;
+                respondBtn.textContent = originalText;
+            }
+        };
+    }
+
+    function setupEditButton(request) {
+        const editBtn = document.getElementById("editRequestBtn");
+        if (!editBtn || !currentUser) {
+            return;
+        }
+
+        const canEdit = typeof canShowEditRequestButton === "function"
+            && canShowEditRequestButton(currentUser, request);
+
+        if (canEdit) {
+            editBtn.href = `create-request.html?id=${request.id}`;
+            editBtn.hidden = false;
+        } else {
+            editBtn.hidden = true;
+        }
+    }
 
     function renderRequest(request) {
         document.getElementById("patientName").textContent = request.patient_name;
@@ -88,7 +204,17 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("contactPhone").textContent = request.contact_phone;
         document.getElementById("description").textContent = request.description || "Няма допълнително описание.";
 
-        document.getElementById("callButton").href = `tel:${request.contact_phone}`;
+        const callButton = document.getElementById("callButton");
+        const telHref = buildTelHref(request.contact_phone);
+        if (callButton) {
+            if (telHref) {
+                callButton.href = telHref;
+                callButton.removeAttribute("aria-disabled");
+            } else {
+                callButton.removeAttribute("href");
+                callButton.setAttribute("aria-disabled", "true");
+            }
+        }
 
         const required = request.required_units_count;
         const fulfilled = request.fulfilled_units_count;
@@ -96,6 +222,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.getElementById("progressText").textContent = `${fulfilled} / ${required} банки`;
         document.getElementById("progressFill").style.width = `${progressPercent}%`;
+
+        if (typeof updateRequestStatusBox === "function") {
+            updateRequestStatusBox(document.getElementById("requestStatusBox"), request.status);
+        }
     }
 
     function renderComments(requestId) {
@@ -104,7 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         commentsList.innerHTML = "";
 
-        const requestComments = comments.filter(comment => comment.request_id === requestId);
+        const requestComments = comments.filter(comment => Number(comment.request_id) === Number(requestId));
 
         if (requestComments.length === 0) {
             noCommentsMessage.style.display = "block";
@@ -116,13 +246,18 @@ document.addEventListener("DOMContentLoaded", () => {
         requestComments.forEach(comment => {
             const commentCard = document.createElement("div");
             commentCard.className = "comment-card";
+            if (Number(comment.is_donor) === 1) {
+                commentCard.classList.add("comment-card-donor");
+            }
 
             commentCard.innerHTML = `
                 <div class="comment-card-header">
                     <strong>${comment.name}</strong>
+                    ${Number(comment.is_donor) === 1 ? '<span class="donor-badge">Донор</span>' : ""}
                     <span>${comment.created_at}</span>
                 </div>
                 <p>${comment.text}</p>
+                ${Number(comment.is_donor) === 1 && comment.contact_phone ? `<a class="comment-phone" href="${buildTelHref(comment.contact_phone)}">Телефон: ${comment.contact_phone}</a>` : ""}
             `;
 
             commentsList.appendChild(commentCard);

@@ -1,3 +1,7 @@
+/**
+ * Campaigns page: filters static campaign cards by city; "featured" cards show when no city is selected.
+ */
+
 document.addEventListener("DOMContentLoaded", () => {
     const cityFilter = document.getElementById("cityFilter");
     const campaignCards = document.querySelectorAll(".campaign-card");

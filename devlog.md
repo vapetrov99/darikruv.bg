@@ -204,12 +204,44 @@ CRUD тестовете работят
 
 ### Реализиране на създаване на заявка за кръв
 
-Беше разработен POST endpoint:
+Беше разработен POST endpoint `route=create_request` с валидация на кръвна група, задължителни полета и опционално `created_by` (потребител, публикувал заявката).
 
-```text
-route=create_request
+### API за списък и детайли на заявки
 
-## 27.03.2006 – Разширяване на потребителския модел и донорска логика
+- `GET route=requests` – заявки от последните 2 дни (съвпада с 48-часовия прозорец във frontend)
+- `GET route=request_details&id=` – единична заявка по ID
+
+### Коментари към заявки
+
+Добавени таблица `request_comments` и endpoints:
+
+- `GET route=request_comments&request_id=`
+- `POST route=create_request_comment` – полета `name`, `text`, опционално `is_donor`, `contact_phone`
+
+Handlers поддържат и по-стари схеми на БД (без `is_donor` / `contact_phone`) чрез `SHOW COLUMNS` fallback.
+
+### Първоначално отзоваване от донори
+
+- `POST route=respond_to_request` – запис в `request_responses` със статус `pending`
+- Таблица `request_responses` с връзка към заявка и донор
+
+### Frontend – модул заявки
+
+Добавени/свързани страници и скриптове:
+
+- `src/html/request.html` + `src/js/requests.js` – списък по град, таймер до „затваряне“, прогрес бар
+- `src/html/request-details.html` + `src/js/request-details.js` – детайли, коментари, `tel:` линк
+- `src/html/create-request.html` + `src/js/create-request.js` – форма за публикуване
+- `src/css/request.css`, `src/css/request_details.css`, `src/css/create-request.css`
+
+### Клиентска автентикация (MVP)
+
+- `src/js/auth-guard.js` – `localStorage` сесия (`token`, `user`), `requireAuth()`, `initAuthUI()`
+- `src/html/auth-required.html`, `src/html/auth-register.html` – пренасочване на нелогнати потребители
+
+---
+
+## 27.03.2026 – Разширяване на потребителския модел и донорска логика
 
 ### Анализ и подобрение на архитектурата
 
@@ -440,3 +472,521 @@ route=create_request
 - правилна връзка между HTML, CSS, JavaScript и API
 
 Това представлява важна стъпка към изграждането на цялостен уеб интерфейс за системата.
+
+## 06.05.2026 – Известяване на донори (Push + Email)
+
+### Реализирана нотификационна архитектура
+
+Добавен беше нов модул за намиране на донори при създаване на заявка за кръв чрез комбинирано известяване:
+
+- Push нотификации (Firebase Cloud Messaging)
+- Email известия (чрез съществуващия SMTP flow)
+
+Таргетирането на получателите е ограничено само до донори, които са:
+
+- верифицирани (`users.is_verified = 1`)
+- маркирани като налични (`donors.is_available = 1`)
+- със съвместима кръвна група спрямо заявката
+
+### Промени в базата данни
+
+В `database/schema.sql` бяха добавени:
+
+- `donor_push_tokens` – съхранение на FCM token-и
+- `notification_logs` – логове за резултата от push/email delivery
+
+### Backend промени
+
+Добавени/обновени файлове:
+
+- `src/config/push.php` – push/Firebase конфигурация
+- `src/services/NotificationService.php` – филтриране на донори, изпращане и логване
+- `src/services/MailServices.php` – добавен `sendRequestNotificationEmail(...)`
+- `src/api/routes/save_push_token.php` – upsert на donor token
+- `src/api/routes/push_public_config.php` – публична конфигурация за frontend
+- `src/api/index.php` – регистрирани новите route-ове
+- `src/api/routes/create_request.php` – trigger на нотификации след успешно създаване
+
+### Миграция от Legacy FCM към HTTP v1
+
+Push изпращането беше мигрирано към Firebase HTTP v1 API:
+
+- премахната зависимост от `FCM_SERVER_KEY`
+- добавена поддръжка на Service Account (JWT + OAuth access token)
+- добавени env променливи:
+  - `FIREBASE_SERVICE_ACCOUNT_JSON`
+  - `FIREBASE_SERVICE_ACCOUNT_JSON_BASE64`
+
+### Frontend промени
+
+Добавена е интеграция за push token регистрация:
+
+- `src/js/firebase-notifications.js`
+- `src/firebase-messaging-sw.js`
+- `src/html/login.html`
+- `src/js/login.js`
+
+Допълнително е добавен ръчен контрол в профила за активиране на известия:
+
+- `src/html/profile.html` – бутон „Включи известия“ + статус
+- `src/js/profile.js` – обработка на бутон и визуална обратна връзка
+- `src/css/profile.css` – стилове за секцията
+
+### Тестване и наблюдения
+
+Проведено беше end-to-end тестване на локална среда:
+
+- инфраструктурата и endpoint-ите работят коректно
+- email известяването е успешно (потвърдено)
+- при някои браузъри (напр. Brave) са нужни ръчни настройки за разрешаване на notifications
+
+Резултат: системата е готова за демонстрация на workflow за автоматично намиране на донори чрез push + email.
+
+## 16.05.2026 – Преработка на начална и auth страница, email верификация и изтриване на профил
+
+### Преработка на welcome страницата (dashboard по град)
+
+Началната страница беше преструктурирана от статичен hero + „Как работи“ към компактно локално табло в стил на модерни кръводарителски платформи (NHS Blood, Red Cross и др.).
+
+Добавени файлове:
+
+- `src/html/welcome.html` – нов layout
+- `src/css/welcome.css` – стилове за dashboard
+- `src/js/welcome.js` – динамично зареждане на съдържание
+- `src/js/campaigns-data.js` – споделени метаданни за кръвни акции (БЧК / НЦТХ)
+
+Реализирани функционалности:
+
+- избор на град (от профила при вход, иначе запомняне в `localStorage`)
+- **последна активна заявка** в избрания град (API `GET requests`, филтър по град, таймер 48 ч, прогрес бар)
+- badge „Съвпада с вашата група“, ако кръвната група на потребителя съвпада
+- **кръвни акции в града** – хоризонтален скрол (до 4 карти)
+- **статус на дарител** (готов за даряване / дни до следващо – 60 дни)
+- лента с факти (1 дарение · до 3 живота · ~45 мин)
+- бързи връзки (акции, заявки, FAQ, профил)
+- 3 кратки стъпки „Как работи“
+
+---
+
+### Преработка на страниците за вход и регистрация
+
+Страниците за вход и регистрация бяха приведени към същия визуален език като welcome.
+
+Добавен файл:
+
+- `src/css/auth-pages.css`
+
+Обновени файлове:
+
+- `src/html/login.html`
+- `src/html/register.html`
+- `src/js/login.js`
+- `src/js/register.js`
+
+Промени:
+
+- двуколонен layout: червен информативен панел + форма
+- регистрация: име/фамилия на един ред, **падащо меню за град** (същите градове като на welcome)
+- блок „Дарител“ с отделен визуален стил при отметка
+- съобщения за успех/грешка с цветни класове
+- бутон със състояние „Влизане…“ / „Регистриране…“
+- след успешен вход – пренасочване към `welcome.html` (вместо профил)
+- поправени пътища към скриптове в `login.html` (`../js/...`)
+
+---
+
+### Страница за потвърден имейл
+
+Добавен е отделен landing page след кликване на линка от имейла, вместо директно показване на JSON от API.
+
+Добавени файлове:
+
+- `src/html/email-verified.html`
+- `src/js/email-verified.js`
+- `src/config/app.php` – базов URL (`APP_URL`, по подразбиране `http://localhost:8080`)
+
+Обновени файлове:
+
+- `src/api/routes/register.php` – verification link сочи към `/html/email-verified.html?token=...`
+- `src/api/routes/verify_email.php` – при заявка от браузър (`Accept: text/html`) пренасочва към landing page със `status=success|already|error`
+- `docker-compose.yml` – env променлива `APP_URL`
+- `src/js/register.js` – съобщение „Провери имейла си…“ вместо показване на raw link
+
+Състояния на страницата: зареждане, успех, вече потвърден, грешка; бутони към вход и начало.
+
+---
+
+### Изтриване на профил (permanent delete)
+
+Добавена е функционалност за пълно и необратимо изтриване на акаунт от профила.
+
+Добавен API endpoint:
+
+- `POST route=delete_account` → `src/api/routes/delete_account.php`
+
+Регистриран в `src/api/index.php`.
+
+Логика при изтриване (транзакция):
+
+1. проверка на парола и потвърждаваща фраза **ИЗТРИЙ**
+2. `DELETE` на всички `blood_requests`, създадени от потребителя (каскадно: коментари, отзови, notification logs)
+3. `DELETE` на потребителя от `users` (каскадно: `donors`, `request_responses`, `donor_push_tokens`, `notification_logs`)
+
+Frontend:
+
+- `src/html/profile.html` – бутон „Изтрий профила“ + модал за съгласие
+- `src/js/profile.js` – `setupDeleteAccountControls()` (checkbox, фраза, парола, финален `confirm()`)
+- `src/css/profile.css` – стилове за danger modal и бутон
+
+След успех: `clearLoginSession()` и пренасочване към `welcome.html?account_deleted=1` със съобщение на началната страница.
+
+Забележка: администраторски акаунти (`role = admin`) не могат да се изтриват от този endpoint.
+
+---
+
+### Други подобрения в същата сесия
+
+- `src/api/routes/login.php` – в отговора при вход се връща и `blood_type` (от `donors`), за badge на welcome при съвпадение на група
+- `src/js/welcome.js` – показване на съобщение при `?account_deleted=1` на началната страница
+
+---
+
+## Допълнение – профил, отзоваване с резервация, редакция на заявки, FAQ и НЦТХ
+
+*(Записи за функционалности, които липсваха в предишните секции на devlog.)*
+
+### Профил и управление на акаунт
+
+**API:**
+
+- `POST route=update_profile` – име, имейл, телефон, град, роля; при роля `donor` – кръвна група и `is_available` (upsert в `donors`)
+- `POST route=update_last_donation` – `last_donation_date` (формат `YYYY-MM-DD`)
+- `GET route=my_requests&user_id=` – заявки, създадени от потребителя
+- `GET route=my_responses&user_id=` – отзови на донора, join с `blood_requests`
+
+**Frontend (`src/html/profile.html`, `src/js/profile.js`, `src/css/profile.css`):**
+
+- табло с данни за потребителя и донорски полета
+- списъци „Моите заявки“ и „Моите отзови“
+- календар за последно даряване + изчисление на следващо възможно (60 дни в UI)
+- модал „Редактирай профил“ с изпращане към `update_profile`
+- push бутон (виж секция 06.05) – вече документиран отделно
+
+---
+
+### Статус `waiting` и двустепенно отзоваване
+
+**База данни:**
+
+- в `blood_requests`: `status` включва `waiting`, `fulfilled`, `closed`; поле `waiting_until`
+- `database/migration_waiting_status.sql` – ALTER за съществуващи инсталации
+
+**Backend:**
+
+- `src/api/helpers/blood_request_helpers.php` – `expireStaleWaitingRequests()`: изтичане на 24-ч резервация → статус `active`, изтриване на `pending` отзови; извиква се при `GET requests`, `GET request_details` и `POST respond_to_request`
+- `POST route=respond_to_request` – разширен с `action`:
+  - `pledge` („Ще се отзова“) – `request_responses.pending`, заявката → `waiting` + `waiting_until` +24ч
+  - `confirm` („Отзовах се“) – `confirmed`, увеличава `fulfilled_units_count`; при покриване на банките → `fulfilled`
+- ограничения: не може отзов на собствена заявка; една резервация в `waiting` на заявка
+
+**Frontend:**
+
+- `src/js/request-respond.js` – бутони pledge/confirm, статус кутия, таймер за `waiting_until`
+- интеграция в `request-details.html` / `request-details.js`
+
+---
+
+### Редакция на публикувана заявка
+
+**API:**
+
+- `POST route=update_request` – само `created_by`; само `status = active`; не повече от **72 часа** след `created_at`; `required_units_count` не под вече изпълнените банки
+
+**Frontend:**
+
+- `src/js/request-edit-utils.js` – `canEditBloodRequest()`, `canShowEditRequestButton()`
+- форма/модал за редакция в детайлите на заявката (собственик)
+
+---
+
+### Страница FAQ и карта на пунктове
+
+Добавена информационна страница с интерактивни елементи:
+
+- `src/html/faq.html`
+- `src/css/faq.css`
+- `src/js/faq.js` – акордеон / секции
+- `src/js/faq-donation-map.js` – карта на пунктове за даряване
+- `src/js/faq-blood-animation.js` – визуализация на кръвни групи
+
+Свързана от навигацията на welcome и други страници.
+
+---
+
+### Страница „Кръвни акции“
+
+- `src/html/campaigns.html` – списък/филтър на акции по град
+- `src/js/welcome_campania.js` – филтриране на статични campaign карти (`data-city`, `data-featured`)
+- `src/js/campaigns-data.js` – метаданни за акции (споделени с welcome)
+- изображения в `src/assets/images/campaigns/`
+- PDF/HTML материали: `src/assets/pdfs/zapali-sveshtichka-2026.html`
+
+---
+
+### Прокси към локатор на НЦТХ
+
+- `GET route=ncth_stores` → `src/api/routes/ncth_stores.php`
+- сървърът вика `https://ncth.bg/wp-admin/admin-ajax.php` (`asl_load_stores`) и връща нормализиран JSON за картата в FAQ
+- регистриран в `src/api/index.php`
+
+---
+
+### Обобщение на API маршрути (към текущата версия)
+
+| Метод | route | Назначение |
+|-------|--------|------------|
+| GET | users | списък потребители |
+| POST | register | регистрация + имейл |
+| GET | verify_email | потвърждение на имейл |
+| POST | login | вход |
+| GET | donors | списък донори |
+| POST | create_request | нова заявка + нотификации |
+| POST | update_request | редакция от създателя |
+| GET | requests | активни заявки (2 дни) |
+| GET | request_details | детайли |
+| POST | respond_to_request | pledge / confirm |
+| GET/POST | request_comments / create_request_comment | коментари |
+| POST | update_profile | профил |
+| POST | update_last_donation | дата на даряване |
+| POST | delete_account | изтриване на акаунт |
+| GET | my_requests / my_responses | активност в профила |
+| POST | save_push_token | FCM token |
+| GET | push_public_config | публичен Firebase конфиг |
+| GET | ncth_stores | пунктове НЦТХ |
+
+---
+
+## 18.05.2026 – Правила, поверителност и приемане при регистрация
+
+### Политика за лични данни и правила за ползване
+
+Създадена е единна правна страница за платформата:
+
+- `src/html/privacy-policy.html` – **„Правила и поверителност“**
+- `src/css/legal-pages.css` – стилове за legal страници (hero, съдържание, таблици, строг блок)
+
+**Съдържание (17 раздела):**
+
+1. Въведение (GDPR, роля на платформата)
+2. **Безвъзмездно кръводаряване** – строга забрана на продажба на кръв, единствена цел – доброволно даряване, санкции при злоупотреба
+3. Администратор и контакт
+4.–17. Лични данни, цели, правно основание, получатели/трансфери, известия, бисквитки/localStorage, срокове, задължителни полета, права, изтриване на акаунт, автоматизирани решения, сигурност, промени, контакт
+
+**Еволюция в същата сесия:**
+
+- Първоначално отделна `cookie-policy.html` → обединена в §9 (бисквитки) на основната страница; `cookie-policy.html` остава само като пренасочване към `#cookies`
+- Разширение по изискванията на GDPR (чл. 12–13) с препратки към gdpr-info.eu → по искане на потребителя **премахнати** номерата на членове, секцията за деца, законен интерес и параграфът за жалба до КЗЛД – оставен четим текст на български
+- Добавен визуален блок `.legal-rules-strict` за §2 (червена рамка, категорични формулировки)
+
+### Навигация
+
+В хедъра на всички основни HTML страници е добавен един линк:
+
+- **„Правила“** → `privacy-policy.html`
+
+(Преди това бяха отделни „Поверителност“ и „Бисквитки“ – опростено до един пункт.)
+
+### Бисквитки и localStorage
+
+В §9 са описани: `token`, `user`, `currentUser`, `welcomeCity`, Firebase (push), Leaflet/unpkg. Ясно е посочено, че **няма** Google Analytics / рекламни пиксели и че за строго необходимото съхранение не се изисква отделен cookie банер.
+
+### Приемане на правилата при регистрация
+
+**Frontend:**
+
+- `src/html/register.html` – задължителен чекбокс с линк към `privacy-policy.html` (`required`, `id="accept_terms"`)
+- `src/js/register.js` – клиентска проверка; в payload се изпраща `accept_terms: true`
+- `src/css/auth-pages.css` – стил `.auth-terms`, `.auth-checkbox--terms`
+
+**Backend:**
+
+- `src/api/routes/register.php` – отказ при липса на `accept_terms`; запис на `terms_accepted_at` и `terms_version` при създаване на потребител
+
+**Конфигурация:**
+
+- `src/config/app.php` – `terms_version` (текущо `2026-05-18-v2` след добавяне на §2 за безвъзмездно даряване)
+
+**База данни:**
+
+- `database/schema.sql` – колони в `users`:
+  - `terms_accepted_at` TIMESTAMP NULL
+  - `terms_version` VARCHAR(32) NULL
+- `database/migration_terms_acceptance.sql` – ALTER за съществуващи инсталации
+
+Стари акаунти могат да имат `NULL` в тези полета; новите регистрации записват час и версия на приетите правила.
+
+### Файлове (обобщение)
+
+| Файл | Промяна |
+|------|---------|
+| `src/html/privacy-policy.html` | нова/основна legal страница |
+| `src/html/cookie-policy.html` | пренасочване към `#cookies` |
+| `src/css/legal-pages.css` | нов |
+| `src/html/register.html` | чекбокс за правила |
+| `src/js/register.js` | валидация + API поле |
+| `src/api/routes/register.php` | проверка и запис в БД |
+| `src/config/app.php` | `terms_version` |
+| `database/schema.sql` | `terms_*` колони |
+| `database/migration_terms_acceptance.sql` | миграция |
+| Всички основни `src/html/*.html` с nav | линк „Правила“ |
+
+### Бележки за deployment
+
+1. Изпълни `database/migration_terms_acceptance.sql` върху работеща MySQL база, ако таблицата `users` вече съществува без новите колони.
+2. При следваща съществена промяна на правилата – актуализирай `privacy-policy.html`, датата „Последна актуализация“ и `terms_version` в `app.php` (новите регистрации ще записват новата версия).
+3. Контакт `privacy@darikruv.bg` и пълно юридическо лице в §3 остават placeholder за реално публично пускане.
+
+---
+
+## 23.05.2026 – Профил, auth UX, reset парола, сигурност и GDPR hard-delete
+
+### Локализация на роля в профила
+
+Обновен е профилният изглед, така че ролите да се показват с разбираем текст на български:
+
+- `donor` → **Кръводарител**
+- `request` / `requester` → **Нуждаещ се**
+
+Файл:
+
+- `src/js/profile.js` (`formatUserRole(...)`)
+
+### Валидация на имейл при регистрация (frontend)
+
+Добавена е клиентска проверка за валиден email формат още преди заявката към API:
+
+- inline грешка под полето за имейл
+- блокиране на submit при невалиден адрес
+
+Файлове:
+
+- `src/html/register.html`
+- `src/js/register.js`
+
+### Замяна на двоични избори с radio бутони (UI консистентност)
+
+Въвеждане на единен radio стил в auth/profile екрани:
+
+- Роля в регистрация: `Нуждаещ се` / `Кръводарител`
+- Наличност в регистрация: `Наличен/а` / `Временно недостъпен/на`
+- Роля в edit-profile модал
+- Наличност в edit-profile модал
+
+Обновени файлове:
+
+- `src/html/register.html`
+- `src/js/register.js`
+- `src/html/profile.html`
+- `src/js/profile.js`
+- `src/css/auth-pages.css`
+- `src/css/profile.css`
+
+Допълнително:
+
+- фиксирано е вертикалното подравняване на radio опциите в регистрация.
+
+### Поток „Забравена парола“ / „Нова парола“
+
+Реализирана е пълна backend + frontend функционалност за reset на парола:
+
+**Backend:**
+
+- нови route-ове в `src/api/index.php`:
+  - `POST request_password_reset`
+  - `POST reset_password`
+- нови handlers:
+  - `src/api/routes/request_password_reset.php`
+  - `src/api/routes/reset_password.php`
+- имейл изпращане за reset линк:
+  - `src/services/MailServices.php` (`sendPasswordResetEmail(...)`)
+
+**Frontend:**
+
+- линк „Забравена парола?“ във входа
+- нови страници:
+  - `src/html/forgot-password.html`
+  - `src/html/reset-password.html`
+- нови скриптове:
+  - `src/js/forgot-password.js`
+  - `src/js/reset-password.js`
+- стил за inline auth линк:
+  - `src/css/auth-pages.css`
+
+**База данни:**
+
+- добавени reset полета в `users`:
+  - `password_reset_token`
+  - `password_reset_expires_at`
+  - `password_reset_requested_at`
+- файлове:
+  - `database/migration_password_reset.sql`
+  - `database/schema.sql`
+
+### Отстранен проблем: `Password reset request failed` (HTTP 500)
+
+Причина:
+
+- липсващи `password_reset_*` колони в таблицата `users` на текущата инсталация.
+
+Решение:
+
+- приложена migration `database/migration_password_reset.sql`;
+- повторен тест на endpoint-а `request_password_reset` (вече връща success).
+
+### Затягане на паролната политика (frontend + backend)
+
+Новото правило за пароли:
+
+- минимум **8 символа**
+- поне 1 малка буква
+- поне 1 главна буква
+- поне 1 цифра
+
+Приложено в:
+
+- регистрация (UI + API):
+  - `src/html/register.html`
+  - `src/js/register.js`
+  - `src/api/routes/register.php`
+- reset парола (UI + API):
+  - `src/html/reset-password.html`
+  - `src/js/reset-password.js`
+  - `src/api/routes/reset_password.php`
+
+### Logout / сесия
+
+Подсилена е логиката за изход, така че да чисти по-пълно клиентската сесия:
+
+- изчистване на auth ключове и от `localStorage`, и от `sessionStorage`
+- чистене и на legacy ключове (`authToken`, `auth_token`, `loggedInUser`, `logged_in_user`)
+- редирект с `window.location.replace(...)` (по-чист UX след logout)
+
+Файл:
+
+- `src/js/auth-guard.js`
+
+### GDPR hard-delete при изтриване на профил
+
+Разширена е съществуващата логика за `delete_account`, така че да се трие максимално пълна свързана история в транзакция:
+
+- `request_responses` (по `donor_user_id`)
+- `notification_logs` (по `donor_user_id`)
+- `donor_push_tokens` (по `donor_user_id`)
+- `donors` (по `user_id`)
+- `blood_requests` (по `created_by`) + каскадно свързани записи
+- `users`
+- допълнително: standalone `request_comments` по съвпадение `author_name + contact_phone`
+
+Файл:
+
+- `src/api/routes/delete_account.php`

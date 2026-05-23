@@ -9,7 +9,12 @@ CREATE TABLE users (
     role ENUM('admin', 'donor', 'requester') DEFAULT 'requester',
     is_verified BOOLEAN DEFAULT FALSE, /*Mail verif*/
     verification_token VARCHAR(255) NULL,
+    password_reset_token VARCHAR(255) NULL,
+    password_reset_expires_at TIMESTAMP NULL,
+    password_reset_requested_at TIMESTAMP NULL,
     verified_at TIMESTAMP NULL,
+    terms_accepted_at TIMESTAMP NULL,
+    terms_version VARCHAR(32) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -19,6 +24,8 @@ CREATE TABLE donors (
     blood_type ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-') NOT NULL,
     last_donation_date DATE NULL,
     is_available BOOLEAN DEFAULT TRUE,
+    email_notifications BOOLEAN DEFAULT FALSE,
+    campaign_email_notifications BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -32,7 +39,8 @@ CREATE TABLE blood_requests (
     contact_name VARCHAR(150) NOT NULL,
     contact_phone VARCHAR(20) NOT NULL,
     description TEXT NULL,
-    status ENUM('active', 'fulfilled', 'closed') DEFAULT 'active',
+    status ENUM('active', 'waiting', 'fulfilled', 'closed') DEFAULT 'active',
+    waiting_until TIMESTAMP NULL,
     required_units_count INT NOT NULL DEFAULT 1,
     fulfilled_units_count INT NOT NULL DEFAULT 0,
     created_by INT NULL,
@@ -45,6 +53,39 @@ CREATE TABLE request_responses (
     request_id INT NOT NULL,
     donor_user_id INT NOT NULL,
     response_status ENUM('pending', 'confirmed') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES blood_requests(id) ON DELETE CASCADE,
+    FOREIGN KEY (donor_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE request_comments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    request_id INT NOT NULL,
+    author_name VARCHAR(150) NOT NULL,
+    comment_text TEXT NOT NULL,
+    is_donor BOOLEAN DEFAULT FALSE,
+    contact_phone VARCHAR(20) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES blood_requests(id) ON DELETE CASCADE
+);
+
+CREATE TABLE donor_push_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    donor_user_id INT NOT NULL,
+    fcm_token VARCHAR(255) NOT NULL UNIQUE,
+    is_active BOOLEAN DEFAULT TRUE,
+    last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (donor_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE notification_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    request_id INT NOT NULL,
+    donor_user_id INT NOT NULL,
+    channel ENUM('push', 'email') NOT NULL,
+    status ENUM('sent', 'failed') NOT NULL,
+    error_message VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (request_id) REFERENCES blood_requests(id) ON DELETE CASCADE,
     FOREIGN KEY (donor_user_id) REFERENCES users(id) ON DELETE CASCADE

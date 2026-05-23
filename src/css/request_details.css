@@ -54,6 +54,16 @@
     color: #777;
 }
 
+.details-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.edit-request-btn {
+    white-space: nowrap;
+}
+
 .blood-badge {
     background: #c62828;
     color: #fff;
@@ -149,9 +159,90 @@
     margin-bottom: 20px;
 }
 
-.contact-btn {
+.contact-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.contact-card-actions .contact-btn,
+.contact-card-actions .respond-btn-details {
+    display: block;
     width: 100%;
+    box-sizing: border-box;
     text-align: center;
+}
+
+.contact-btn {
+    margin: 0;
+}
+
+.respond-btn-details {
+    background: #c62828;
+    color: #fff;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+}
+
+.respond-btn-details:hover {
+    background: #b71c1c;
+}
+
+.contact-card .request-status-box {
+    margin: 0 0 18px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.request-status-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 16px 22px;
+    border-radius: 14px;
+    text-align: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.request-status-box__label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.9;
+}
+
+.request-status-box__value {
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+.request-status-box.active {
+    background: #e53935;
+    color: #fff;
+}
+
+.request-status-box.waiting {
+    background: #fb8c00;
+    color: #fff;
+}
+
+.request-status-box.fulfilled {
+    background: #43a047;
+    color: #fff;
+}
+
+.request-status-box.closed {
+    background: #757575;
+    color: #fff;
 }
 
 .comments-section {
@@ -173,6 +264,12 @@
     display: grid;
     gap: 18px;
     margin-bottom: 28px;
+}
+
+.comment-author-preview {
+    margin: 0;
+    color: #555;
+    font-size: 15px;
 }
 
 .form-group {
@@ -219,9 +316,16 @@
     padding: 18px;
 }
 
+.comment-card-donor {
+    border-left: 5px solid #c62828;
+    background: #fff5f5;
+}
+
 .comment-card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 15px;
     margin-bottom: 10px;
 }
@@ -233,6 +337,22 @@
 .comment-card span {
     color: #777;
     font-size: 14px;
+}
+
+.donor-badge {
+    background: #c62828;
+    color: #fff;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.comment-phone {
+    display: inline-block;
+    margin-top: 8px;
+    color: #c62828;
+    font-weight: bold;
 }
 
 .comment-card p {

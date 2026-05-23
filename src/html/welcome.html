@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дари Кръв — Начало</title>
+    <link rel="stylesheet" href="../css/style_test1.css">
+    <link rel="stylesheet" href="../css/welcome.css">
+</head>
+<body class="welcome-page">
+    <header class="header">
+        <div class="container nav-container">
+            <h1 class="logo">Дари Кръв</h1>
+            <nav class="nav">
+                <a href="welcome.html" class="nav-active">Начало</a>
+                <a href="request.html">Заявки</a>
+                <a href="campaigns.html">Кампании</a>
+                <a href="faq.html">Въпроси и отговори</a>
+                <a href="privacy-policy.html">Правила</a>
+                <a href="register.html" class="guest-only">Регистрация</a>
+                <a href="login.html" class="btn btn-nav guest-only">Вход</a>
+                <a href="profile.html" class="auth-only">Профил</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="welcome-hero">
+            <div class="container welcome-hero-inner">
+                <div>
+                    <p class="welcome-eyebrow">Кръводаряване наблизо</p>
+                    <h1>Спаси живот в <span id="heroCity">София</span></h1>
+                    <p class="welcome-tagline">
+                        Актуални заявки, кръвни акции и напомняния — на едно място, по твоя град.
+                    </p>
+                </div>
+                <div class="welcome-hero-cta">
+                    <a href="campaigns.html" class="btn">Кръвни акции</a>
+                    <a href="request.html" class="btn btn-outline auth-only">Заявки</a>
+                    <a href="register.html" class="btn btn-outline guest-only">Регистрация</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="welcome-stats" aria-label="Факти за кръводаряване">
+            <div class="container welcome-stats-inner">
+                <span>1 дарение</span>
+                <span>до 3 спасени живота</span>
+                <span>~45 минути от времето ви</span>
+            </div>
+        </section>
+
+        <section class="welcome-dashboard container">
+            <div class="welcome-toolbar">
+                <div>
+                    <label for="welcomeCitySelect">Твоят град</label>
+                    <select id="welcomeCitySelect" aria-label="Избор на град"></select>
+                </div>
+                <p id="welcomeGreeting" class="welcome-greeting"></p>
+            </div>
+
+            <div class="welcome-grid">
+                <article class="welcome-card welcome-card--urgent" id="latestRequestCard" aria-live="polite">
+                    <div class="welcome-card-header">
+                        <h2>Зареждане…</h2>
+                    </div>
+                </article>
+
+                <article class="welcome-card welcome-card--donor" id="donorStatusCard" aria-live="polite"></article>
+
+                <article class="welcome-card welcome-card--actions">
+                    <div class="welcome-card-header">
+                        <h2>Бързи действия</h2>
+                    </div>
+                    <div class="welcome-quick-grid">
+                        <a href="campaigns.html" class="welcome-quick-link">
+                            <strong>Кръвни акции</strong>
+                            <span>Мобилни пунктове и кампании</span>
+                        </a>
+                        <a href="request.html" class="welcome-quick-link auth-only">
+                            <strong>Активни заявки</strong>
+                            <span>Спешни нужди по градове</span>
+                        </a>
+                        <a href="create-request.html" class="welcome-quick-link auth-only">
+                            <strong>Нова заявка</strong>
+                            <span>Създай спешна нужда</span>
+                        </a>
+                        <a href="faq.html#where" class="welcome-quick-link">
+                            <strong>Къде да даря</strong>
+                            <span>РЦТХ и пунктове на картата</span>
+                        </a>
+                        <a href="faq.html" class="welcome-quick-link">
+                            <strong>Въпроси</strong>
+                            <span>Кой може да дари кръв</span>
+                        </a>
+                        <a href="profile.html" class="welcome-quick-link auth-only">
+                            <strong>Профил</strong>
+                            <span>Календар и известия</span>
+                        </a>
+                    </div>
+                </article>
+            </div>
+
+            <section class="welcome-campaigns-section" aria-labelledby="campaignsHeading">
+                <div class="welcome-section-head">
+                    <h2 id="campaignsHeading">Кръвни акции в <span id="campaignsCityLabel">София</span></h2>
+                    <a href="campaigns.html">Всички акции →</a>
+                </div>
+                <div class="welcome-campaigns-scroll" id="welcomeCampaignsList"></div>
+            </section>
+
+            <section class="welcome-steps" aria-label="Как работи платформата">
+                <div class="welcome-step">
+                    <span class="welcome-step-num">1</span>
+                    <h3>Регистрация</h3>
+                    <p>Създай профил с град и кръвна група — за персонализирани известия.</p>
+                </div>
+                <div class="welcome-step">
+                    <span class="welcome-step-num">2</span>
+                    <h3>Заявки и акции</h3>
+                    <p>Следи спешни нужди или се включи в официална кръвна акция наблизо.</p>
+                </div>
+                <div class="welcome-step">
+                    <span class="welcome-step-num">3</span>
+                    <h3>Даряване</h3>
+                    <p>Едно дарение отнема около 45 минути и може да спаси до три живота.</p>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Дари Кръв. Данни за акции: <a href="https://www.redcross.bg/" target="_blank" rel="noopener noreferrer">БЧК</a> · <a href="https://ncth.bg/" target="_blank" rel="noopener noreferrer">НЦТХ</a></p>
+        </div>
+    </footer>
+
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/campaigns-data.js"></script>
+    <script src="../js/welcome.js"></script>
+</body>
+</html>

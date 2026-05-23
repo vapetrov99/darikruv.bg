@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Детайли за заявка</title>
-    <link rel="stylesheet" href="../css/style_test1.css">
-    <link rel="stylesheet" href="../css/request-details.css">
+    <link rel="stylesheet" href="/css/style_test1.css">
+    <link rel="stylesheet" href="/css/request_details.css">
 </head>
 <body>
 
@@ -13,11 +13,14 @@
     <div class="container nav-container">
         <h1 class="logo">Кръводарители</h1>
         <nav class="nav">
-            <a href="welcome_test1.html">Начало</a>
+            <a href="welcome.html">Начало</a>
             <a href="request.html">Заявки</a>
-            <a href="donors.html">Дарители</a>
-            <a href="register.html">Регистрация</a>
-            <a href="login.html" class="btn btn-nav">Вход</a>
+            <a href="campaigns.html">Кампании</a>
+            <a href="faq.html">Въпроси и отговори</a>
+            <a href="privacy-policy.html">Правила</a>
+            <a href="register.html" class="guest-only">Регистрация</a>
+            <a href="login.html" class="btn btn-nav guest-only">Вход</a>
+            <a href="profile.html" class="auth-only">Профил</a>
         </nav>
     </div>
 </header>
@@ -35,7 +38,10 @@
                             <p id="createdAt">Публикувана на: --</p>
                         </div>
 
-                        <span id="bloodType" class="blood-badge">A+</span>
+                        <div class="details-header-actions">
+                            <a id="editRequestBtn" href="#" class="btn btn-outline edit-request-btn" hidden>Редактирай</a>
+                            <span id="bloodType" class="blood-badge">A+</span>
+                        </div>
                     </div>
 
                     <div class="details-grid">
@@ -80,9 +86,13 @@
 
             <aside class="details-side">
                 <div class="contact-card">
+                    <div id="requestStatusBox" class="request-status-box" hidden></div>
                     <h3>Искаш да помогнеш?</h3>
                     <p>Свържи се с лицето за контакт и уточни кога можеш да дариш кръв.</p>
-                    <a id="callButton" href="#" class="btn contact-btn">Обади се</a>
+                    <div class="contact-card-actions">
+                        <a id="callButton" href="#" class="btn contact-btn">Обади се</a>
+                        <button type="button" id="respondBtn" class="respond-btn respond-btn-details" hidden>Ще се отзова</button>
+                    </div>
                 </div>
             </aside>
         </div>
@@ -94,10 +104,7 @@
             </div>
 
             <form id="commentForm" class="comment-form">
-                <div class="form-group">
-                    <label for="commentName">Име</label>
-                    <input type="text" id="commentName" name="comment_name" required>
-                </div>
+                <p id="commentAuthorPreview" class="comment-author-preview"></p>
 
                 <div class="form-group">
                     <label for="commentText">Коментар</label>
@@ -124,6 +131,9 @@
     </div>
 </footer>
 
-<script src="../js/request-details.js"></script>
+<script src="/js/auth-guard.js"></script>
+<script src="/js/request-edit-utils.js"></script>
+<script src="/js/request-respond.js"></script>
+<script src="/js/request-details.js"></script>
 </body>
 </html>

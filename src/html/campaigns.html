@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кампании - DariKruv</title>
+    <link rel="stylesheet" href="../css/style_test1.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container nav-container">
+            <h1 class="logo">Дари Кръв</h1>
+            <nav class="nav">
+                <a href="welcome.html">Начало</a>
+                <a href="request.html">Заявки</a>
+                <a href="campaigns.html" class="nav-active">Кампании</a>
+                <a href="faq.html">Въпроси и отговори</a>
+                <a href="privacy-policy.html">Правила</a>
+                <a href="register.html" class="guest-only">Регистрация</a>
+                <a href="login.html" class="btn btn-nav guest-only">Вход</a>
+                <a href="profile.html" class="auth-only">Профил</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="campaigns" class="campaigns campaigns-page">
+            <div class="container">
+                <h2 class="section-title">Кръвни акции</h2>
+                <p class="section-subtitle">
+                    Актуални кръводарителски кампании на <strong>Българския червен кръст</strong> и НЦТХ.
+                    Изберете град или разгледайте препоръчаните акции.
+                </p>
+
+                <div class="campaign-filter">
+                    <label for="cityFilter">Избери град:</label>
+                    <select id="cityFilter">
+                        <option value="">-- Всички препоръчани --</option>
+                        <option value="София">София</option>
+                        <option value="Пловдив">Пловдив</option>
+                        <option value="Варна">Варна</option>
+                        <option value="Бургас">Бургас</option>
+                        <option value="Стара Загора">Стара Загора</option>
+                        <option value="Плевен">Плевен</option>
+                        <option value="Русе">Русе</option>
+                        <option value="Благоевград">Благоевград</option>
+                        <option value="Велико Търново">Велико Търново</option>
+                        <option value="Добрич">Добрич</option>
+                        <option value="Перник">Перник</option>
+                        <option value="Хасково">Хасково</option>
+                    </select>
+                </div>
+
+                <div class="campaigns-grid">
+                    <!-- София -->
+                    <a class="campaign-card"
+                       data-city="София"
+                       data-featured="true"
+                       href="../assets/pdfs/zapali-sveshtichka-2026.html"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/sofia-zapali.jpg" alt="Цветница – София">
+                        <div class="campaign-overlay">
+                            <h3>Цветница – София</h3>
+                            <p class="campaign-date">5 април 2026 · 9:00–13:00</p>
+                            <p>„Запали свещичка“ – пунктове при храмове</p>
+                        </div>
+                    </a>
+
+                    <a class="campaign-card"
+                       data-city="София"
+                       href="../assets/pdfs/zapali-sveshtichka-2026.html"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/sofia-april16.jpg" alt="16 април – София">
+                        <div class="campaign-overlay">
+                            <h3>Света Неделя – София</h3>
+                            <p class="campaign-date">16 април 2026 · 9:00–13:00</p>
+                            <p>Богословски факултет и храм „Света Неделя“</p>
+                        </div>
+                    </a>
+
+                    <a class="campaign-card"
+                       data-city="София"
+                       href="../assets/pdfs/zapali-sveshtichka-2026.html"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/sofia-april19.jpg" alt="19 април – София">
+                        <div class="campaign-overlay">
+                            <h3>Младост – София</h3>
+                            <p class="campaign-date">19 април 2026 · 9:00–13:00</p>
+                            <p>Храм „Рождество Христово“, ж.к. Младост 3</p>
+                        </div>
+                    </a>
+
+                    <!-- Пловдив -->
+                    <a class="campaign-card"
+                       data-city="Пловдив"
+                       data-featured="true"
+                       href="../assets/pdfs/zapali-sveshtichka-2026.html"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/plovdiv.jpg" alt="Пролетна кампания – Пловдив">
+                        <div class="campaign-overlay">
+                            <h3>Пролетна кампания – Пловдив</h3>
+                            <p class="campaign-date">РЦТХ · бул. „България“ 234Б</p>
+                            <p>Национална инициатива с БЧК и НЦТХ</p>
+                        </div>
+                    </a>
+
+                    <!-- Варна -->
+                    <a class="campaign-card"
+                       data-city="Варна"
+                       data-featured="true"
+                       href="../assets/pdfs/zapali-sveshtichka-2026.html"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/varna.jpg" alt="Цветница – Варна">
+                        <div class="campaign-overlay">
+                            <h3>Цветница – Варна</h3>
+                            <p class="campaign-date">5 април 2026 · 11:00–14:00</p>
+                            <p>Морска градина · „Кръводари време“</p>
+                        </div>
+                    </a>
+
+                    <a class="campaign-card"
+                       data-city="Варна"
+                       href="https://www.redcross.bg/news/view?nwid=24641"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/varna.jpg" alt="Ден на Червения кръст – Варна">
+                        <div class="campaign-overlay">
+                            <h3>Ден на Червения кръст – Варна</h3>
+                            <p class="campaign-date">8–9 май 2026</p>
+                            <p>Мобилен пункт на ларгото · БЧК Варна</p>
+                        </div>
+                    </a>
+
+                    <!-- Бургас -->
+                    <a class="campaign-card"
+                       data-city="Бургас"
+                       data-featured="true"
+                       href="../assets/pdfs/zapali-sveshtichka-2026.html"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/burgas.jpg" alt="Пролетна кампания – Бургас">
+                        <div class="campaign-overlay">
+                            <h3>Пролетна кампания – Бургас</h3>
+                            <p class="campaign-date">Цветница и Светла седмица 2026</p>
+                            <p>Национална кампания · вижте пунктове на картата</p>
+                        </div>
+                    </a>
+
+                    <!-- Плевен -->
+                    <a class="campaign-card"
+                       data-city="Плевен"
+                       data-featured="true"
+                       href="../assets/pdfs/zapali-sveshtichka-2026.html"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/pleven.jpg" alt="Цветница – Плевен">
+                        <div class="campaign-overlay">
+                            <h3>Цветница – Плевен</h3>
+                            <p class="campaign-date">5 април 2026 · 9:00–15:00</p>
+                            <p>Храм „Света Параскева“ · БЧК / НЦТХ</p>
+                        </div>
+                    </a>
+
+                    <a class="campaign-card"
+                       data-city="Плевен"
+                       href="https://ncth.bg/centres/pleven/"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/pleven.jpg" alt="РЦТХ – Плевен">
+                        <div class="campaign-overlay">
+                            <h3>РЦТХ – Плевен</h3>
+                            <p class="campaign-date">бул. „Русе“ № 36</p>
+                            <p>Редовно кръводаряване · 064 898 848</p>
+                        </div>
+                    </a>
+
+                    <!-- Стара Загора -->
+                    <a class="campaign-card"
+                       data-city="Стара Загора"
+                       data-featured="true"
+                       href="https://ncth.bg/centres/stara-zagora/"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/stara-zagora.jpg" alt="Пролетна кампания – Стара Загора">
+                        <div class="campaign-overlay">
+                            <h3>Пролетна кампания – Стара Загора</h3>
+                            <p class="campaign-date">РЦТХ · бул. „Ген. Столетов“ № 2</p>
+                            <p>Национална инициатива „Запали свещичка“</p>
+                        </div>
+                    </a>
+
+                    <!-- Русе -->
+                    <a class="campaign-card"
+                       data-city="Русе"
+                       data-featured="true"
+                       href="https://ncth.bg/centres/ruse/"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/ruse.jpg" alt="Пролетна кампания – Русе">
+                        <div class="campaign-overlay">
+                            <h3>Пролетна кампания – Русе</h3>
+                            <p class="campaign-date">РЦТХ · ул. „Независимост“ № 2</p>
+                            <p>БЧК и НЦТХ · 082 887 236</p>
+                        </div>
+                    </a>
+
+                    <!-- Благоевград -->
+                    <a class="campaign-card"
+                       data-city="Благоевград"
+                       data-featured="true"
+                       href="https://ncth.bg/centres/blagoevgrad/"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/blagoevgrad.jpg" alt="Пролетна кампания – Благоевград">
+                        <div class="campaign-overlay">
+                            <h3>Пролетна кампания – Благоевград</h3>
+                            <p class="campaign-date">РЦТХ · ул. „Славянска“ № 60</p>
+                            <p>Пон–пт 8:00–14:00 · 0879 535 288</p>
+                        </div>
+                    </a>
+
+                    <!-- Велико Търново -->
+                    <a class="campaign-card"
+                       data-city="Велико Търново"
+                       data-featured="true"
+                       href="../assets/pdfs/zapali-sveshtichka-2026.html"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/veliko-tarnovo.jpg" alt="Пролетна кампания – Велико Търново">
+                        <div class="campaign-overlay">
+                            <h3>Пролетна кампания – Велико Търново</h3>
+                            <p class="campaign-date">Цветница и Светла седмица 2026</p>
+                            <p>Национална кампания · мобилни екипи по график</p>
+                        </div>
+                    </a>
+
+                    <!-- Добрич -->
+                    <a class="campaign-card"
+                       data-city="Добрич"
+                       data-featured="true"
+                       href="https://ncth.bg/centres/dobrich/"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/dobrich.jpg" alt="Пролетна кампания – Добрич">
+                        <div class="campaign-overlay">
+                            <h3>Пролетна кампания – Добрич</h3>
+                            <p class="campaign-date">РЦТХ · ул. „Панайот Хитов“ № 24</p>
+                            <p>Пон–пт 8:00–12:30 · 0884 540 994</p>
+                        </div>
+                    </a>
+
+                    <!-- Перник -->
+                    <a class="campaign-card"
+                       data-city="Перник"
+                       data-featured="true"
+                       href="https://ncth.bg/centres/pernik/"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/pernik.jpg" alt="Пролетна кампания – Перник">
+                        <div class="campaign-overlay">
+                            <h3>Пролетна кампания – Перник</h3>
+                            <p class="campaign-date">РЦТХ · ул. „Брезник“ № 2</p>
+                            <p>Пон–пт 8:30–12:30 · 076 687 321</p>
+                        </div>
+                    </a>
+
+                    <!-- Хасково -->
+                    <a class="campaign-card"
+                       data-city="Хасково"
+                       data-featured="true"
+                       href="https://ncth.bg/centres/haskovo/"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <img src="../assets/images/campaigns/haskovo.jpg" alt="Пролетна кампания – Хасково">
+                        <div class="campaign-overlay">
+                            <h3>Пролетна кампания – Хасково</h3>
+                            <p class="campaign-date">РЦТХ · бул. „Съединение“ № 49</p>
+                            <p>Пон–пт 7:30–13:30 · 038 606 712</p>
+                        </div>
+                    </a>
+                </div>
+
+                <p id="noCampaignsMessage" class="no-campaigns">
+                    Няма акции за избрания град.
+                </p>
+
+                <p class="campaigns-note">
+                    Данните са от официални източници:
+                    <a href="https://www.redcross.bg/news/view?nwid=24641" target="_blank" rel="noopener noreferrer">БЧК</a>,
+                    <a href="https://ncth.bg/events/news/zapali-sveshtichka-podari-zhivot/" target="_blank" rel="noopener noreferrer">НЦТХ</a>.
+                    Официални центрове за редовно даряване –
+                    <a href="faq.html#where">Къде да даря</a>.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Кръводарители. Всички права запазени.</p>
+        </div>
+    </footer>
+
+    <script src="../js/auth-guard.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            initAuthUI();
+        });
+    </script>
+    <script src="../js/welcome_campania.js"></script>
+</body>
+</html>

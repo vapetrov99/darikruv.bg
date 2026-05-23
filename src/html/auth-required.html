@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Необходима е регистрация</title>
+    <link rel="stylesheet" href="../css/style_test1.css">
+    <link rel="stylesheet" href="../css/auth-required.css">
+</head>
+<body>
+
+<header class="header">
+    <div class="container nav-container">
+        <h1 class="logo">Кръводарители</h1>
+        <nav class="nav">
+            <a href="welcome.html">Начало</a>
+            <a href="request.html">Заявки</a>
+            <a href="campaigns.html">Кампании</a>
+            <a href="faq.html">Въпроси и отговори</a>
+            <a href="privacy-policy.html">Правила</a>
+            <a href="register.html" class="guest-only">Регистрация</a>
+            <a href="login.html" class="btn btn-nav guest-only">Вход</a>
+            <a href="profile.html" class="auth-only">Профил</a>
+        </nav>
+    </div>
+</header>
+
+<main class="auth-required-page">
+    <div class="container">
+        <div class="auth-card">
+            <div class="icon">🩸</div>
+
+            <h2>Регистрацията е задължителна</h2>
+
+            <p class="main-text">
+                За да използваш функциите на платформата, е необходимо да имаш акаунт.
+            </p>
+
+            <p class="reason-text">
+                Това е въведено с цел сигурност, проследимост и защита на хората,
+                които търсят и даряват кръв.
+            </p>
+
+            <ul class="benefits">
+                <li>✔ По-голяма сигурност при контакт между потребители</li>
+                <li>✔ Проследяване на даренията</li>
+                <li>✔ Предотвратяване на злоупотреби</li>
+            </ul>
+
+            <div class="auth-actions">
+                <a href="register.html" class="btn">Регистрация</a>
+                <a href="login.html" class="btn btn-outline">Вход</a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <p>&copy; 2026 Кръводарители. Всички права запазени.</p>
+    </div>
+</footer>
+
+<script src="../js/auth-guard.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        initAuthUI();
+    });
+</script>
+</body>
+</html>

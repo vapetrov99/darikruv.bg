@@ -13,11 +13,14 @@
     <div class="container nav-container">
         <h1 class="logo">Кръводарители</h1>
         <nav class="nav">
-            <a href="index.html">Начало</a>
+            <a href="welcome.html">Начало</a>
             <a href="request.html">Заявки</a>
-            <a href="donors.html">Дарители</a>
-            <a href="register.html">Регистрация</a>
-            <a href="login.html" class="btn btn-nav">Вход</a>
+            <a href="campaigns.html">Кампании</a>
+            <a href="faq.html">Въпроси и отговори</a>
+            <a href="privacy-policy.html">Правила</a>
+            <a href="register.html" class="guest-only">Регистрация</a>
+            <a href="login.html" class="btn btn-nav guest-only">Вход</a>
+            <a href="profile.html" class="auth-only">Профил</a>
         </nav>
     </div>
 </header>
@@ -26,8 +29,8 @@
     <div class="container">
         <div class="form-wrapper">
             <div class="form-header">
-                <h2>Създай заявка за кръв</h2>
-                <p>Попълни информацията, за да публикуваш нова активна заявка.</p>
+                <h2 id="formPageTitle">Създай заявка за кръв</h2>
+                <p id="formPageSubtitle">Попълни информацията, за да публикуваш нова заявка.</p>
             </div>
 
             <form id="createRequestForm" class="request-form">
@@ -135,6 +138,8 @@
     </div>
 </footer>
 
+<script src="../js/auth-guard.js"></script>
+<script src="../js/request-edit-utils.js"></script>
 <script src="../js/create-request.js"></script>
 </body>
 </html>
