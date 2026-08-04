@@ -1,12 +1,14 @@
 <?php
 
 /**
- * GET users — returns a simple list of users (admin-style listing; no auth middleware in this MVP).
+ * GET users — returns a simple list of users (admin-only).
  */
 return static function (PDO $pdo): void {
     try {
+        auth_require_role('admin');
+
         $stmt = $pdo->query("
-            SELECT id, first_name, last_name, email, phone, city, role, created_at
+            SELECT public_id, first_name, last_name, email, phone, city, role, created_at
             FROM users
             ORDER BY id DESC
         ");
@@ -23,7 +25,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to fetch users',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

@@ -8,11 +8,15 @@
  */
 (function () {
     /**
-     * @param {object} user Logged-in user object from API (must have role "donor" and id).
+     * @param {object} user Logged-in user object from API (must have role "donor" and identity).
      * @returns {Promise<{ ok: boolean, message: string }>}
      */
     async function registerPushIfEligible(user) {
-        if (!user || user.role !== "donor" || !user.id) {
+        const hasIdentity = typeof hasUserIdentity === "function"
+            ? hasUserIdentity(user)
+            : Boolean(user?.id || user?.public_id);
+
+        if (!user || user.role !== "donor" || !hasIdentity) {
             return { ok: false, message: "Push известията са само за донори." };
         }
 
@@ -65,13 +69,12 @@
                 return { ok: false, message: "Не беше генериран push token." };
             }
 
-            const saveResponse = await fetch("../api/index.php?route=save_push_token", {
+            const saveResponse = await authFetch("../api/index.php?route=save_push_token", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    user_id: user.id,
                     token,
                     enabled: true
                 })

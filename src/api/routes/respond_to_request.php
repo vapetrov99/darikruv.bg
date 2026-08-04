@@ -9,17 +9,18 @@ return static function (PDO $pdo): void {
     require_once __DIR__ . '/../helpers/blood_request_helpers.php';
 
     try {
+        $authUser = auth_require_user();
+        $donorUserId = (int)$authUser['id'];
         $input = json_decode(file_get_contents('php://input'), true);
 
         $requestId = isset($input['request_id']) ? (int)$input['request_id'] : 0;
-        $donorUserId = isset($input['donor_user_id']) ? (int)$input['donor_user_id'] : 0;
         $action = trim($input['action'] ?? 'pledge');
 
-        if ($requestId < 1 || $donorUserId < 1) {
+        if ($requestId < 1) {
             http_response_code(400);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Valid request_id and donor_user_id are required'
+                'message' => 'Valid request_id is required'
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
@@ -37,14 +38,16 @@ return static function (PDO $pdo): void {
 
         $requestStmt = $pdo->prepare("
             SELECT
-                id,
-                status,
-                created_by,
-                required_units_count,
-                fulfilled_units_count,
-                waiting_until
-            FROM blood_requests
-            WHERE id = :id
+                br.id,
+                br.status,
+                br.created_by,
+                u_creator.public_id AS created_by_public_id,
+                br.required_units_count,
+                br.fulfilled_units_count,
+                br.waiting_until
+            FROM blood_requests br
+            LEFT JOIN users u_creator ON u_creator.id = br.created_by
+            WHERE br.id = :id
             LIMIT 1
         ");
         $requestStmt->execute([':id' => $requestId]);
@@ -68,25 +71,7 @@ return static function (PDO $pdo): void {
             return;
         }
 
-        $userStmt = $pdo->prepare("
-            SELECT id, role
-            FROM users
-            WHERE id = :id
-            LIMIT 1
-        ");
-        $userStmt->execute([':id' => $donorUserId]);
-        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$user) {
-            http_response_code(404);
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Donor user not found'
-            ], JSON_UNESCAPED_UNICODE);
-            return;
-        }
-
-        if (!in_array($user['role'], ['donor', 'requester'], true)) {
+        if (!in_array($authUser['role'] ?? '', ['donor', 'requester'], true)) {
             http_response_code(403);
             echo json_encode([
                 'status' => 'error',
@@ -270,7 +255,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to respond to blood request',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };
@@ -279,13 +263,15 @@ function buildRespondPayload(PDO $pdo, int $requestId, int $donorUserId): array
 {
     $requestStmt = $pdo->prepare("
         SELECT
-            id,
-            status,
-            required_units_count,
-            fulfilled_units_count,
-            waiting_until
-        FROM blood_requests
-        WHERE id = :id
+            br.id,
+            br.status,
+            br.required_units_count,
+            br.fulfilled_units_count,
+            br.waiting_until,
+            u_creator.public_id AS created_by_public_id
+        FROM blood_requests br
+        LEFT JOIN users u_creator ON u_creator.id = br.created_by
+        WHERE br.id = :id
         LIMIT 1
     ");
     $requestStmt->execute([':id' => $requestId]);

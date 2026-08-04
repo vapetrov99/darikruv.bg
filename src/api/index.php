@@ -12,6 +12,7 @@
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/helpers/auth.php';
 require_once __DIR__ . '/../services/MailServices.php';
 require_once __DIR__ . '/../services/NotificationService.php';
 
@@ -37,6 +38,7 @@ $handlers = [
     'GET request_comments' => require __DIR__ . '/routes/request_comments_list.php',
     'POST create_request_comment' => require __DIR__ . '/routes/create_request_comment.php',
     'POST create_campaign' => require __DIR__ . '/routes/create_campaign.php',
+    'POST process_email_queue' => require __DIR__ . '/routes/process_email_queue.php',
     'POST update_last_donation' => require __DIR__ . '/routes/update_last_donation.php',
     'POST update_profile' => require __DIR__ . '/routes/update_profile.php',
     'POST delete_account' => require __DIR__ . '/routes/delete_account.php',
@@ -55,5 +57,6 @@ if (!isset($handlers[$routeKey])) {
 }
 
 $handler = $handlers[$routeKey];
+auth_hydrate_request_user($pdo);
 $handler($pdo);
 exit;

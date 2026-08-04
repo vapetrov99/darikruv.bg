@@ -1,19 +1,20 @@
 <?php
 
 /**
- * POST update_last_donation — JSON body: user_id, last_donation_date (YYYY-MM-DD); updates donors row.
+ * POST update_last_donation — JSON body: last_donation_date (YYYY-MM-DD); updates authenticated donor row.
  */
 return static function (PDO $pdo): void {
     try {
+        $authUser = auth_require_user();
+        $userId = (int)$authUser['id'];
         $input = json_decode(file_get_contents('php://input'), true);
-        $userId = isset($input['user_id']) ? (int)$input['user_id'] : 0;
         $lastDonationDate = trim($input['last_donation_date'] ?? '');
 
-        if ($userId <= 0 || $lastDonationDate === '') {
+        if ($lastDonationDate === '') {
             http_response_code(400);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'user_id and last_donation_date are required'
+                'message' => 'last_donation_date is required'
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
@@ -101,7 +102,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to update donation date',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

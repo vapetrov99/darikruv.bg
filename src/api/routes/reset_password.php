@@ -76,7 +76,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Password reset failed',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

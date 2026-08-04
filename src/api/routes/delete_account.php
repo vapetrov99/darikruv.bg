@@ -6,17 +6,18 @@
  */
 return static function (PDO $pdo): void {
     try {
+        $authUser = auth_require_user();
+        $userId = (int)$authUser['id'];
         $input = json_decode(file_get_contents('php://input'), true);
 
-        $userId = isset($input['user_id']) ? (int)$input['user_id'] : 0;
         $password = $input['password'] ?? '';
         $confirmPhrase = trim($input['confirm_phrase'] ?? '');
 
-        if ($userId < 1 || $password === '') {
+        if ($password === '') {
             http_response_code(400);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'user_id и парола са задължителни'
+                'message' => 'Паролата е задължителна'
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
@@ -150,7 +151,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Грешка при изтриване на профила',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

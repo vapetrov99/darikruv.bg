@@ -43,10 +43,15 @@ function updateRequestStatusBox(element, status) {
     const safeStatus = String(status || "active").replace(/[^a-z]/gi, "");
     element.className = `request-status-box ${safeStatus}`;
     element.hidden = false;
-    element.innerHTML = `
-        <span class="request-status-box__label">Статус на заявката</span>
-        <strong class="request-status-box__value">${formatRequestStatusLabel(status)}</strong>
-    `;
+    element.textContent = "";
+    const label = document.createElement("span");
+    label.className = "request-status-box__label";
+    label.textContent = "Статус на заявката";
+    const value = document.createElement("strong");
+    value.className = "request-status-box__value";
+    value.textContent = formatRequestStatusLabel(status);
+    element.appendChild(label);
+    element.appendChild(value);
 }
 
 function parseRequestDateTime(value) {
@@ -78,15 +83,26 @@ function getWaitingTimeLeft(waitingUntil) {
 }
 
 function canShowRespondButton(user, request) {
-    if (!user?.id) {
+    if (typeof hasUserIdentity !== "function" || !hasUserIdentity(user)) {
+        return false;
+    }
+
+    const userPublicId = typeof getCurrentUserPublicId === "function"
+        ? getCurrentUserPublicId(user)
+        : null;
+    const ownerPublicId = String(request?.created_by_public_id || "").trim().toLowerCase();
+    if (userPublicId && ownerPublicId && userPublicId === ownerPublicId) {
         return false;
     }
 
     const ownerId = request.created_by !== null && request.created_by !== undefined
         ? Number(request.created_by)
         : null;
+    const userInternalId = typeof getCurrentUserInternalId === "function"
+        ? getCurrentUserInternalId(user)
+        : null;
 
-    if (ownerId !== null && ownerId === Number(user.id)) {
+    if (ownerId !== null && userInternalId !== null && ownerId === userInternalId) {
         return false;
     }
 
@@ -129,14 +145,13 @@ async function submitRequestResponse(requestId, action) {
         throw new Error("Трябва да си влязъл в профила си.");
     }
 
-    const response = await fetch(getApiUrl("respond_to_request"), {
+    const response = await authFetch(getApiUrl("respond_to_request"), {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
             request_id: requestId,
-            donor_user_id: Number(user.id),
             action
         })
     });

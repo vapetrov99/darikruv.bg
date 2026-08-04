@@ -4,15 +4,30 @@
 const REQUEST_EDIT_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 function isRequestOwner(user, request) {
-    if (!user?.id || !request) {
+    if (!request || typeof hasUserIdentity !== "function" || !hasUserIdentity(user)) {
         return false;
+    }
+
+    const userPublicId = typeof getCurrentUserPublicId === "function"
+        ? getCurrentUserPublicId(user)
+        : null;
+    const ownerPublicId = String(request.created_by_public_id || "").trim().toLowerCase();
+    if (userPublicId && ownerPublicId && userPublicId === ownerPublicId) {
+        return true;
     }
 
     if (request.created_by === null || request.created_by === undefined) {
         return false;
     }
 
-    return Number(request.created_by) === Number(user.id);
+    const userInternalId = typeof getCurrentUserInternalId === "function"
+        ? getCurrentUserInternalId(user)
+        : null;
+    if (!userInternalId) {
+        return false;
+    }
+
+    return Number(request.created_by) === Number(userInternalId);
 }
 
 function canEditBloodRequest(request) {

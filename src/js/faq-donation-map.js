@@ -3,20 +3,19 @@
  * @see https://ncth.bg/contacts/
  */
 
-const DONATION_MAP_DEFAULT = { lat: 42.6954108, lng: 23.2539071, zoom: 7 };
-
-let donationMap = null;
-let donationMarkers = null;
+let donationMapIframe = null;
 let allStores = [];
 let mapInitialized = false;
 let selectedStoreId = null;
+let mapFocus = null;
 
 function escapeHtml(text) {
     return String(text || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
 function storeSearchText(store) {
@@ -33,7 +32,25 @@ function setLocatorStatus(message) {
 }
 
 function getDirectionsUrl(store) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${store.lat},${store.lng}`;
+    const lat = Number(store?.lat);
+    const lng = Number(store?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return "https://www.google.com/maps";
+    }
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}`;
+}
+
+function normalizePhoneForHref(phone) {
+    const digits = String(phone || "").replace(/\D/g, "");
+    return digits ? `tel:${digits}` : "";
+}
+
+function normalizeEmailForHref(email) {
+    const trimmed = String(email || "").trim();
+    if (!trimmed || /[\r\n]/.test(trimmed)) {
+        return "";
+    }
+    return `mailto:${encodeURIComponent(trimmed)}`;
 }
 
 function findStoreById(storeId) {
@@ -41,11 +58,13 @@ function findStoreById(storeId) {
 }
 
 function buildStoreDetailHtml(store) {
+    const telHref = normalizePhoneForHref(store.phone);
+    const emailHref = normalizeEmailForHref(store.email);
     const phone = store.phone
-        ? `<p><strong>Телефон:</strong> <a href="tel:${store.phone.replace(/\s/g, "")}">${escapeHtml(store.phone)}</a></p>`
+        ? `<p><strong>Телефон:</strong> <a href="${telHref}">${escapeHtml(store.phone)}</a></p>`
         : "";
-    const email = store.email
-        ? `<p><strong>Имейл:</strong> <a href="mailto:${escapeHtml(store.email)}">${escapeHtml(store.email)}</a></p>`
+    const email = emailHref
+        ? `<p><strong>Имейл:</strong> <a href="${emailHref}">${escapeHtml(store.email)}</a></p>`
         : "";
     const description = store.description
         ? `<div class="faq-locator-selected-desc">${escapeHtml(store.description).replace(/\n/g, "<br>")}</div>`
@@ -73,8 +92,11 @@ function renderSelectedStore(store) {
 
     if (!store) {
         el.classList.remove("has-store");
-        el.innerHTML =
-            '<p class="faq-locator-selected-placeholder">Изберете пункт от списъка или картата, за да видите подробности.</p>';
+        el.textContent = "";
+        const placeholder = document.createElement("p");
+        placeholder.className = "faq-locator-selected-placeholder";
+        placeholder.textContent = "Изберете пункт от списъка или картата, за да видите подробности.";
+        el.appendChild(placeholder);
         return;
     }
 
@@ -95,70 +117,105 @@ function selectStore(store) {
     highlightStoreItem(store.id);
 }
 
-function buildPopupContent(store) {
-    const phone = store.phone
-        ? `<p><strong>Тел.:</strong> <a href="tel:${store.phone.replace(/\s/g, "")}">${escapeHtml(store.phone)}</a></p>`
-        : "";
-    const email = store.email
-        ? `<p><strong>Email:</strong> <a href="mailto:${escapeHtml(store.email)}">${escapeHtml(store.email)}</a></p>`
-        : "";
-    const description = store.description
-        ? `<p>${escapeHtml(store.description).replace(/\n/g, "<br>")}</p>`
-        : "";
-
-    return `
-        <div class="faq-map-popup">
-            <h4>${escapeHtml(store.title)}</h4>
-            <p>${escapeHtml(store.address)}</p>
-            ${description}
-            ${phone}
-            ${email}
-            <a href="${getDirectionsUrl(store)}" class="faq-directions-link" target="_blank" rel="noopener noreferrer">Упътване</a>
-        </div>
-    `;
-}
-
 function initDonationMap() {
     const mapEl = document.getElementById("donation_map");
-    if (!mapEl || mapInitialized || typeof L === "undefined") {
+    if (!mapEl || mapInitialized) {
         return;
     }
 
-    donationMap = L.map(mapEl).setView(
-        [DONATION_MAP_DEFAULT.lat, DONATION_MAP_DEFAULT.lng],
-        DONATION_MAP_DEFAULT.zoom
-    );
+    const iframe = document.createElement("iframe");
+    iframe.id = "donation_map_iframe";
+    iframe.title = "Карта с пунктове за кръводаряване";
+    iframe.loading = "lazy";
+    iframe.referrerPolicy = "no-referrer-when-downgrade";
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 18,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(donationMap);
-
-    donationMarkers = L.layerGroup().addTo(donationMap);
+    mapEl.innerHTML = "";
+    mapEl.appendChild(iframe);
+    donationMapIframe = iframe;
     mapInitialized = true;
 }
 
-function renderStoreMarkers(stores) {
-    if (!donationMap || !donationMarkers) {
+function clampLat(lat) {
+    return Math.max(-85.0511, Math.min(85.0511, lat));
+}
+
+function clampLng(lng) {
+    return Math.max(-180, Math.min(180, lng));
+}
+
+function setIframeMapByBounds(minLat, minLng, maxLat, maxLng, markerLat = null, markerLng = null) {
+    if (!donationMapIframe) {
         return;
     }
 
-    donationMarkers.clearLayers();
-    const bounds = [];
-
-    stores.forEach((store) => {
-        const marker = L.marker([store.lat, store.lng]);
-        marker.bindPopup(buildPopupContent(store));
-        marker.on("click", () => selectStore(store));
-        donationMarkers.addLayer(marker);
-        bounds.push([store.lat, store.lng]);
+    const west = clampLng(minLng);
+    const south = clampLat(minLat);
+    const east = clampLng(maxLng);
+    const north = clampLat(maxLat);
+    const params = new URLSearchParams({
+        bbox: `${west},${south},${east},${north}`,
+        layer: "mapnik"
     });
 
-    if (bounds.length === 1) {
-        donationMap.setView(bounds[0], 12);
-    } else if (bounds.length > 1) {
-        donationMap.fitBounds(bounds, { padding: [30, 30] });
+    if (Number.isFinite(markerLat) && Number.isFinite(markerLng)) {
+        params.set("marker", `${clampLat(markerLat)},${clampLng(markerLng)}`);
     }
+
+    donationMapIframe.src = `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
+}
+
+function renderStoreMarkers(stores) {
+    if (!donationMapIframe) {
+        return;
+    }
+
+    if (!stores.length) {
+        const minLat = 41.0;
+        const minLng = 22.0;
+        const maxLat = 44.5;
+        const maxLng = 28.8;
+        setIframeMapByBounds(minLat, minLng, maxLat, maxLng);
+        return;
+    }
+
+    let minLat = Infinity;
+    let minLng = Infinity;
+    let maxLat = -Infinity;
+    let maxLng = -Infinity;
+
+    stores.forEach((store) => {
+        minLat = Math.min(minLat, store.lat);
+        minLng = Math.min(minLng, store.lng);
+        maxLat = Math.max(maxLat, store.lat);
+        maxLng = Math.max(maxLng, store.lng);
+    });
+
+    if (mapFocus && Number.isFinite(mapFocus.lat) && Number.isFinite(mapFocus.lng)) {
+        minLat = Math.min(minLat, mapFocus.lat);
+        minLng = Math.min(minLng, mapFocus.lng);
+        maxLat = Math.max(maxLat, mapFocus.lat);
+        maxLng = Math.max(maxLng, mapFocus.lng);
+    }
+
+    const padLat = Math.max(0.2, (maxLat - minLat) * 0.2);
+    const padLng = Math.max(0.2, (maxLng - minLng) * 0.2);
+    const boundsMinLat = minLat - padLat;
+    const boundsMinLng = minLng - padLng;
+    const boundsMaxLat = maxLat + padLat;
+    const boundsMaxLng = maxLng + padLng;
+
+    const selectedStore = selectedStoreId != null
+        ? stores.find((store) => Number(store.id) === Number(selectedStoreId)) || null
+        : null;
+
+    setIframeMapByBounds(
+        boundsMinLat,
+        boundsMinLng,
+        boundsMaxLat,
+        boundsMaxLng,
+        selectedStore ? selectedStore.lat : (mapFocus?.lat ?? null),
+        selectedStore ? selectedStore.lng : (mapFocus?.lng ?? null)
+    );
 }
 
 function highlightStoreItem(storeId) {
@@ -197,14 +254,35 @@ function renderStoreList(stores) {
         li.className = "faq-store-item";
         li.dataset.id = String(store.id);
         li.tabIndex = 0;
-        li.innerHTML = `
-            <div class="faq-store-item-body">
-                <strong>${escapeHtml(store.title)}</strong>
-                <span>${escapeHtml(store.address)}</span>
-                ${store.phone ? `<span class="faq-store-phone">${escapeHtml(store.phone)}</span>` : ""}
-            </div>
-            <a href="${getDirectionsUrl(store)}" class="faq-store-directions" target="_blank" rel="noopener noreferrer">Упътване</a>
-        `;
+
+        const body = document.createElement("div");
+        body.className = "faq-store-item-body";
+
+        const title = document.createElement("strong");
+        title.textContent = String(store.title || "");
+
+        const address = document.createElement("span");
+        address.textContent = String(store.address || "");
+
+        body.appendChild(title);
+        body.appendChild(address);
+
+        if (store.phone) {
+            const phone = document.createElement("span");
+            phone.className = "faq-store-phone";
+            phone.textContent = String(store.phone);
+            body.appendChild(phone);
+        }
+
+        const directionsLink = document.createElement("a");
+        directionsLink.href = getDirectionsUrl(store);
+        directionsLink.className = "faq-store-directions";
+        directionsLink.target = "_blank";
+        directionsLink.rel = "noopener noreferrer";
+        directionsLink.textContent = "Упътване";
+
+        li.appendChild(body);
+        li.appendChild(directionsLink);
 
         const directionsBtn = li.querySelector(".faq-store-directions");
         directionsBtn.addEventListener("click", (event) => {
@@ -213,12 +291,7 @@ function renderStoreList(stores) {
 
         li.addEventListener("click", () => {
             selectStore(store);
-            donationMap.setView([store.lat, store.lng], 13);
-            donationMarkers.eachLayer((layer) => {
-                if (layer.getLatLng().lat === store.lat && layer.getLatLng().lng === store.lng) {
-                    layer.openPopup();
-                }
-            });
+            renderStoreMarkers([store]);
         });
 
         list.appendChild(li);
@@ -262,7 +335,7 @@ async function loadDonationStores() {
         applyStoreFilter("");
         setLocatorStatus("");
     } catch (error) {
-        setLocatorStatus("Неуспешно зареждане. Опитайте отново или вижте ncth.bg/contacts");
+        setLocatorStatus(`Неуспешно зареждане: ${error.message || "Опитайте отново."}`);
         console.error(error);
     }
 }
@@ -286,8 +359,10 @@ function bindLocatorControls() {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const { latitude, longitude } = pos.coords;
-                    if (donationMap) {
-                        donationMap.setView([latitude, longitude], 10);
+                    if (donationMapIframe) {
+                        mapFocus = { lat: latitude, lng: longitude };
+                        const currentStores = filterStores(document.getElementById("locator_search")?.value || "");
+                        renderStoreMarkers(currentStores);
                     }
                     setLocatorStatus("");
                 },
@@ -310,8 +385,17 @@ function initDonationLocator() {
         if (!section.hidden && !allStores.length) {
             loadDonationStores();
         }
-        if (!section.hidden && donationMap) {
-            setTimeout(() => donationMap.invalidateSize(), 200);
+        if (!section.hidden && donationMapIframe) {
+            setTimeout(() => {
+                if (selectedStoreId != null) {
+                    const selectedStore = findStoreById(selectedStoreId);
+                    if (selectedStore) {
+                        renderStoreMarkers([selectedStore]);
+                        return;
+                    }
+                }
+                renderStoreMarkers(filterStores(document.getElementById("locator_search")?.value || ""));
+            }, 200);
         }
     });
 
@@ -324,8 +408,9 @@ function initDonationLocator() {
 
 window.loadDonationStores = loadDonationStores;
 window.invalidateDonationMap = () => {
-    if (donationMap) {
-        donationMap.invalidateSize();
+    if (donationMapIframe) {
+        const filteredStores = filterStores(document.getElementById("locator_search")?.value || "");
+        renderStoreMarkers(filteredStores);
     }
 };
 

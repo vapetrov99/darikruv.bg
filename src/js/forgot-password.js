@@ -18,6 +18,7 @@ forgotPasswordForm?.addEventListener("submit", async (event) => {
     setAuthMessage("");
 
     const email = document.getElementById("email")?.value.trim() || "";
+    const website = document.getElementById("website")?.value || "";
     if (!email) {
         setAuthMessage("Моля, въведи имейл адрес.", "error");
         return;
@@ -34,7 +35,7 @@ forgotPasswordForm?.addEventListener("submit", async (event) => {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email, website })
         });
 
         const result = await response.json();

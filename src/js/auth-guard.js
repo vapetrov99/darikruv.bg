@@ -1,11 +1,32 @@
 /**
  * Client-side session helpers for the DariKruv MVP.
  *
- * The API does not issue JWTs here: "token" in localStorage is a placeholder string ("logged-in").
- * Real user fields live in localStorage under "user" / "currentUser" (duplicated for legacy pages).
+ * Real bearer token is persisted in localStorage under "token".
+ * User fields live in localStorage under "user" / "currentUser" (duplicated for legacy pages).
  *
  * requireAuth / isLoggedIn gate pages that need a logged-in user; initAuthUI updates nav visibility.
  */
+
+function isUuidV4(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        String(value || "").trim()
+    );
+}
+
+function normalizeSessionUser(user) {
+    if (!user || typeof user !== "object") {
+        return null;
+    }
+
+    const normalized = { ...user };
+    const publicId = String(user.public_id || "").trim().toLowerCase();
+    normalized.public_id = isUuidV4(publicId) ? publicId : null;
+
+    const rawId = Number(user.id);
+    normalized.id = Number.isInteger(rawId) && rawId > 0 ? rawId : null;
+
+    return normalized;
+}
 
 function getCurrentUser() {
     const rawUser = localStorage.getItem("user") || localStorage.getItem("currentUser");
@@ -14,19 +35,37 @@ function getCurrentUser() {
     }
 
     try {
-        return JSON.parse(rawUser);
+        return normalizeSessionUser(JSON.parse(rawUser));
     } catch (_error) {
         return null;
     }
 }
 
-function isLoggedIn() {
-    return Boolean(localStorage.getItem("token")) && Boolean(getCurrentUser());
+function getCurrentUserPublicId(user = null) {
+    const resolved = normalizeSessionUser(user) || getCurrentUser();
+    const publicId = String(resolved?.public_id || "").trim().toLowerCase();
+    return isUuidV4(publicId) ? publicId : null;
 }
 
-function saveLoginSession(user, token = "session-token") {
-    const normalizedUser = user || {};
+function getCurrentUserInternalId(user = null) {
+    const resolved = normalizeSessionUser(user) || getCurrentUser();
+    const id = Number(resolved?.id);
+    return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function hasUserIdentity(user = null) {
+    return Boolean(getCurrentUserPublicId(user) || getCurrentUserInternalId(user));
+}
+
+function isLoggedIn() {
+    return Boolean(getAuthToken()) && Boolean(getCurrentUser());
+}
+
+function saveLoginSession(user, token = "") {
+    const normalizedUser = normalizeSessionUser(user) || {};
     localStorage.setItem("token", token);
+    localStorage.setItem("auth_token", token);
+    localStorage.setItem("authToken", token);
     localStorage.setItem("user", JSON.stringify(normalizedUser));
     localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
 }
@@ -47,6 +86,35 @@ function clearLoginSession() {
         localStorage.removeItem(key);
         sessionStorage.removeItem(key);
     });
+}
+
+function getAuthToken() {
+    return (
+        localStorage.getItem("token") ||
+        localStorage.getItem("auth_token") ||
+        localStorage.getItem("authToken") ||
+        ""
+    );
+}
+
+function getAuthHeaders(extraHeaders = {}) {
+    const headers = { ...extraHeaders };
+    const token = getAuthToken();
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+}
+
+async function authFetch(url, options = {}) {
+    const preparedOptions = { ...options };
+    preparedOptions.headers = getAuthHeaders(options.headers || {});
+
+    const response = await fetch(url, preparedOptions);
+    if (response.status === 401) {
+        clearLoginSession();
+    }
+    return response;
 }
 
 function logout(redirectTo = "login.html") {
@@ -71,6 +139,11 @@ function getDisplayName(user) {
     return user.name || fullName || user.email || "Потребител";
 }
 
+function isAdminUser(user = null) {
+    const resolvedUser = user || getCurrentUser();
+    return Boolean(resolvedUser) && String(resolvedUser.role || "").toLowerCase() === "admin";
+}
+
 function setVisibilityByAuthState(isAuth) {
     document.querySelectorAll(".guest-only").forEach((el) => {
         el.style.display = isAuth ? "none" : "";
@@ -78,6 +151,35 @@ function setVisibilityByAuthState(isAuth) {
     document.querySelectorAll(".auth-only").forEach((el) => {
         el.style.display = isAuth ? "" : "none";
     });
+}
+
+function ensureAdminNavLink(nav, user) {
+    const existingAdminLink = nav.querySelector("#adminNavLink");
+    if (isAdminUser(user)) {
+        if (existingAdminLink) {
+            existingAdminLink.style.display = "";
+            return;
+        }
+
+        const adminLink = document.createElement("a");
+        adminLink.id = "adminNavLink";
+        adminLink.className = "auth-only";
+        adminLink.href = "admin.html";
+        adminLink.textContent = "Админ";
+
+        const profileLink = nav.querySelector('a[href="profile.html"]');
+        if (profileLink && profileLink.parentNode === nav) {
+            nav.insertBefore(adminLink, profileLink);
+            return;
+        }
+
+        nav.appendChild(adminLink);
+        return;
+    }
+
+    if (existingAdminLink) {
+        existingAdminLink.remove();
+    }
 }
 
 function initAuthUI() {
@@ -96,8 +198,11 @@ function initAuthUI() {
     }
 
     if (!auth || !user) {
+        ensureAdminNavLink(nav, null);
         return;
     }
+
+    ensureAdminNavLink(nav, user);
 
     const wrapper = document.createElement("span");
     wrapper.id = "authUserInfo";
@@ -117,4 +222,17 @@ function initAuthUI() {
     wrapper.appendChild(nameSpan);
     wrapper.appendChild(logoutLink);
     nav.appendChild(wrapper);
+}
+
+function requireAdmin(redirectTo = "welcome.html") {
+    if (!requireAuth("login.html")) {
+        return false;
+    }
+
+    if (!isAdminUser()) {
+        window.location.href = redirectTo;
+        return false;
+    }
+
+    return true;
 }

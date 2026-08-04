@@ -5,8 +5,22 @@
  * Users start with is_verified = 0 until GET verify_email is hit with the token.
  */
 return static function (PDO $pdo): void {
+    require_once __DIR__ . '/../helpers/rate_limit.php';
+
     try {
         $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        if (rate_limit_honeypot_filled($input)) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Invalid request payload'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
 
         $firstName = trim($input['first_name'] ?? '');
         $lastName = trim($input['last_name'] ?? '');
@@ -50,12 +64,35 @@ return static function (PDO $pdo): void {
 
         $appConfig = require __DIR__ . '/../../config/app.php';
         $termsVersion = $appConfig['terms_version'] ?? '2026-05-18';
+        $shouldExposeVerificationLink = (bool)($appConfig['security']['expose_verification_link_in_register_response'] ?? false);
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             http_response_code(400);
             echo json_encode([
                 'status' => 'error',
                 'message' => 'Invalid email format'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $ipLimit = rate_limit_check_and_hit($pdo, 'register_ip', rate_limit_get_client_ip(), 5, 900);
+        if (!$ipLimit['allowed']) {
+            http_response_code(429);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Твърде много регистрации за кратко време. Опитай отново след малко.',
+                'retry_after' => (int)$ipLimit['retry_after']
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $emailLimit = rate_limit_check_and_hit($pdo, 'register_email', $email, 3, 900);
+        if (!$emailLimit['allowed']) {
+            http_response_code(429);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Твърде много регистрации с този имейл. Опитай отново след малко.',
+                'retry_after' => (int)$emailLimit['retry_after']
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
@@ -107,19 +144,21 @@ return static function (PDO $pdo): void {
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $verificationToken = bin2hex(random_bytes(32));
+        $publicId = auth_generate_uuid_v4();
         $role = $isDonor ? 'donor' : 'requester';
 
         $insertUserStmt = $pdo->prepare("
             INSERT INTO users (
-                first_name, last_name, email, password, phone, city, role,
+                public_id, first_name, last_name, email, password, phone, city, role,
                 is_verified, verification_token, terms_accepted_at, terms_version
             )
             VALUES (
-                :first_name, :last_name, :email, :password, :phone, :city, :role,
+                :public_id, :first_name, :last_name, :email, :password, :phone, :city, :role,
                 :is_verified, :verification_token, :terms_accepted_at, :terms_version
             )
         ");
         $insertUserStmt->execute([
+            ':public_id' => $publicId,
             ':first_name' => $firstName,
             ':last_name' => $lastName,
             ':email' => $email,
@@ -159,23 +198,27 @@ return static function (PDO $pdo): void {
 
         $pdo->commit();
 
+        $responseData = [
+            'public_id' => $publicId,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $email,
+            'phone' => $phone,
+            'city' => $city,
+            'role' => $role,
+            'is_donor' => $isDonor,
+            'terms_accepted_at' => date('Y-m-d H:i:s'),
+            'terms_version' => $termsVersion,
+        ];
+        if ($shouldExposeVerificationLink) {
+            $responseData['verification_link'] = $verificationLink;
+        }
+
         http_response_code(201);
         echo json_encode([
             'status' => 'success',
             'message' => 'User registered successfully',
-            'data' => [
-                'id' => $userId,
-                'first_name' => $firstName,
-                'last_name' => $lastName,
-                'email' => $email,
-                'phone' => $phone,
-                'city' => $city,
-                'role' => $role,
-                'is_donor' => $isDonor,
-                'terms_accepted_at' => date('Y-m-d H:i:s'),
-                'terms_version' => $termsVersion,
-                'verification_link' => $verificationLink
-            ]
+            'data' => $responseData
         ], JSON_UNESCAPED_UNICODE);
     } catch (PDOException $e) {
         if ($pdo->inTransaction()) {
@@ -186,7 +229,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Registration failed',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

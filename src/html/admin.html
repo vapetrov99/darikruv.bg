@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ панел — Дари Кръв</title>
+    <link rel="stylesheet" href="../css/style_test1.css">
+</head>
+<body>
+<header class="header">
+    <div class="container nav-container">
+        <h1 class="logo">Дари Кръв</h1>
+        <nav class="nav">
+            <a href="welcome.html">Начало</a>
+            <a href="request.html">Заявки</a>
+            <a href="campaigns.html">Кампании</a>
+            <a href="faq.html">Въпроси и отговори</a>
+            <a href="privacy-policy.html">Правила</a>
+            <a href="register.html" class="guest-only">Регистрация</a>
+            <a href="login.html" class="btn btn-nav guest-only">Вход</a>
+            <a href="profile.html" class="auth-only">Профил</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container" style="padding:32px 0 48px;">
+    <section style="margin-bottom:24px;">
+        <h1 style="margin-bottom:8px;">Админ панел</h1>
+        <p style="margin:0;color:#5f6b7a;">Достъп само за администратор.</p>
+        <div id="adminStatus" style="margin-top:12px;font-weight:600;" aria-live="polite"></div>
+    </section>
+
+    <section style="margin-bottom:32px;">
+        <h2>Потребители</h2>
+        <button id="reloadUsersBtn" type="button" class="btn" style="margin-bottom:12px;">Обнови списъка</button>
+        <div style="overflow:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                <tr style="text-align:left;border-bottom:1px solid #ddd;">
+                    <th style="padding:8px;">Public ID (UUID)</th>
+                    <th style="padding:8px;">Име</th>
+                    <th style="padding:8px;">Имейл</th>
+                    <th style="padding:8px;">Град</th>
+                    <th style="padding:8px;">Роля</th>
+                </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section style="margin-bottom:32px;">
+        <h2>Донори</h2>
+        <button id="reloadDonorsBtn" type="button" class="btn" style="margin-bottom:12px;">Обнови списъка</button>
+        <div style="overflow:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                <tr style="text-align:left;border-bottom:1px solid #ddd;">
+                    <th style="padding:8px;">User Public ID (UUID)</th>
+                    <th style="padding:8px;">Име</th>
+                    <th style="padding:8px;">Кръвна група</th>
+                    <th style="padding:8px;">Град</th>
+                    <th style="padding:8px;">Имейл</th>
+                </tr>
+                </thead>
+                <tbody id="donorsTableBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<script src="../js/auth-guard.js"></script>
+<script src="../js/admin.js"></script>
+</body>
+</html>

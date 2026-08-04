@@ -10,7 +10,8 @@ return static function (PDO $pdo): void {
         expireStaleWaitingRequests($pdo);
 
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
+        $authUser = auth_current_user();
+        $userId = $authUser ? (int)($authUser['id'] ?? 0) : 0;
 
         if ($id < 1) {
             http_response_code(400);
@@ -23,22 +24,23 @@ return static function (PDO $pdo): void {
 
         $stmt = $pdo->prepare("
             SELECT
-                id,
-                patient_name,
-                blood_type,
-                city,
-                hospital,
-                contact_name,
-                contact_phone,
-                description,
-                status,
-                waiting_until,
-                required_units_count,
-                fulfilled_units_count,
-                created_by,
-                created_at
-            FROM blood_requests
-            WHERE id = :id
+                br.id,
+                br.patient_name,
+                br.blood_type,
+                br.city,
+                br.hospital,
+                br.contact_name,
+                br.contact_phone,
+                br.description,
+                br.status,
+                br.waiting_until,
+                br.required_units_count,
+                br.fulfilled_units_count,
+                u_creator.public_id AS created_by_public_id,
+                br.created_at
+            FROM blood_requests br
+            LEFT JOIN users u_creator ON u_creator.id = br.created_by
+            WHERE br.id = :id
             LIMIT 1
         ");
         $stmt->execute([':id' => $id]);
@@ -80,7 +82,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to fetch blood request details',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

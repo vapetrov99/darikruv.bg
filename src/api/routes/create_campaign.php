@@ -1,10 +1,12 @@
 <?php
 
 /**
- * POST create_campaign — manual trigger that sends campaign emails to opted-in donors.
+ * POST create_campaign — manual trigger that sends campaign emails to opted-in donors (admin-only).
  */
 return static function (PDO $pdo): void {
     try {
+        auth_require_role('admin');
+
         $input = json_decode(file_get_contents('php://input'), true);
 
         $title = trim((string)($input['title'] ?? ''));
@@ -61,7 +63,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Campaign notifications failed',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

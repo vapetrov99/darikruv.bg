@@ -8,3 +8,9 @@ vendor/
 node_modules/
 
 *.log
+
+.env
+src/services/*firebase-adminsdk*.json
+src/services/*-firebase-adminsdk-*.json
+*.pem
+*.p12

@@ -1,33 +1,26 @@
 <?php
 
 /**
- * GET my_requests?user_id= — blood_requests where created_by matches (requester's own listings).
+ * GET my_requests — blood_requests where created_by matches the authenticated user.
  */
 return static function (PDO $pdo): void {    try {
-        $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
-
-        if ($userId < 1) {
-            http_response_code(400);
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Valid user_id is required'
-            ], JSON_UNESCAPED_UNICODE);
-            return;
-        }
+        $authUser = auth_require_user();
+        $userId = (int)$authUser['id'];
 
         $stmt = $pdo->prepare("
             SELECT
-                id,
-                patient_name,
-                blood_type,
-                city,
-                hospital,
-                status,
-                created_by,
-                created_at
-            FROM blood_requests
-            WHERE created_by = :user_id
-            ORDER BY created_at DESC
+                br.id,
+                br.patient_name,
+                br.blood_type,
+                br.city,
+                br.hospital,
+                br.status,
+                u_creator.public_id AS created_by_public_id,
+                br.created_at
+            FROM blood_requests br
+            LEFT JOIN users u_creator ON u_creator.id = br.created_by
+            WHERE br.created_by = :user_id
+            ORDER BY br.created_at DESC
         ");
         $stmt->execute([':user_id' => $userId]);
         $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -41,7 +34,6 @@ return static function (PDO $pdo): void {    try {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to fetch user requests',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

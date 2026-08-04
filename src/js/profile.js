@@ -17,16 +17,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     renderUser(user);
-    loadMyRequests(user.id);
-    loadMyResponses(user.id);
+    loadMyRequests();
+    loadMyResponses();
     setupNotificationControls(user);
     setupDonationControls(user);
     setupDeleteAccountControls(user);
 
+    function buildRequestDetailsHref(requestId) {
+        return `request-details.html?id=${encodeURIComponent(String(requestId ?? ""))}`;
+    }
+
     /** Fetches blood_requests created by this user (requester activity). */
-    async function loadMyRequests(userId) {
+    async function loadMyRequests() {
         try {
-            const response = await fetch(`../api/index.php?route=my_requests&user_id=${userId}`);
+            const response = await authFetch("../api/index.php?route=my_requests");
             const result = await response.json();
 
             if (result.status === "success") {
@@ -41,9 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /** Fetches request_responses for this donor user. */
-    async function loadMyResponses(userId) {
+    async function loadMyResponses() {
         try {
-            const response = await fetch(`../api/index.php?route=my_responses&user_id=${userId}`);
+            const response = await authFetch("../api/index.php?route=my_responses");
             const result = await response.json();
 
             if (result.status === "success") {
@@ -106,6 +110,15 @@ document.addEventListener("DOMContentLoaded", () => {
         return labels[role] || role || "Потребител";
     }
 
+    function buildLabeledParagraph(label, value) {
+        const p = document.createElement("p");
+        const strong = document.createElement("strong");
+        strong.textContent = `${label}:`;
+        p.appendChild(strong);
+        p.append(` ${String(value ?? "")}`);
+        return p;
+    }
+
     function renderMyRequests(requests) {
         const list = document.getElementById("myRequestsList");
         const empty = document.getElementById("noMyRequests");
@@ -124,24 +137,45 @@ document.addEventListener("DOMContentLoaded", () => {
             card.className = "activity-card";
             const canEdit = typeof canShowEditRequestButton === "function"
                 && canShowEditRequestButton(user, request);
-            const editLink = canEdit
-                ? `<a href="create-request.html?id=${request.id}" class="activity-edit-btn">Редактирай</a>`
-                : "";
+            const detailsHref = buildRequestDetailsHref(request.id);
+            const header = document.createElement("div");
+            header.className = "activity-card-header";
 
-            card.innerHTML = `
-                <div class="activity-card-header">
-                    <h4>${request.patient_name}</h4>
-                    <span class="activity-date">${formatActivityDate(request.created_at)}</span>
-                </div>
-                <p><strong>Кръвна група:</strong> ${request.blood_type}</p>
-                <p><strong>Град:</strong> ${request.city}</p>
-                <p><strong>Болница:</strong> ${request.hospital}</p>
-                <p><strong>Статус:</strong> ${formatRequestStatus(request.status)}</p>
-                <div class="activity-card-actions">
-                    <a href="request-details.html?id=${request.id}">Виж заявката</a>
-                    ${editLink}
-                </div>
-            `;
+            const title = document.createElement("h4");
+            title.textContent = String(request.patient_name || "");
+            const date = document.createElement("span");
+            date.className = "activity-date";
+            date.textContent = formatActivityDate(request.created_at);
+
+            header.appendChild(title);
+            header.appendChild(date);
+
+            const blood = buildLabeledParagraph("Кръвна група", request.blood_type);
+            const city = buildLabeledParagraph("Град", request.city);
+            const hospital = buildLabeledParagraph("Болница", request.hospital);
+            const status = buildLabeledParagraph("Статус", formatRequestStatus(request.status));
+
+            const actions = document.createElement("div");
+            actions.className = "activity-card-actions";
+            const detailsLink = document.createElement("a");
+            detailsLink.href = detailsHref;
+            detailsLink.textContent = "Виж заявката";
+            actions.appendChild(detailsLink);
+
+            if (canEdit) {
+                const editLink = document.createElement("a");
+                editLink.href = `create-request.html?id=${encodeURIComponent(String(request.id ?? ""))}`;
+                editLink.className = "activity-edit-btn";
+                editLink.textContent = "Редактирай";
+                actions.appendChild(editLink);
+            }
+
+            card.appendChild(header);
+            card.appendChild(blood);
+            card.appendChild(city);
+            card.appendChild(hospital);
+            card.appendChild(status);
+            card.appendChild(actions);
 
             list.appendChild(card);
         });
@@ -163,17 +197,30 @@ document.addEventListener("DOMContentLoaded", () => {
         responses.forEach(response => {
             const card = document.createElement("div");
             card.className = "activity-card";
+            const header = document.createElement("div");
+            header.className = "activity-card-header";
 
-            card.innerHTML = `
-                <div class="activity-card-header">
-                    <h4>${response.patient_name}</h4>
-                    <span class="activity-date">${formatActivityDate(response.created_at)}</span>
-                </div>
-                <p><strong>Кръвна група:</strong> ${response.blood_type}</p>
-                <p><strong>Град:</strong> ${response.city}</p>
-                <p><strong>Статус:</strong> ${response.response_status}</p>
-                <a href="request-details.html?id=${response.request_id}">Виж заявката</a>
-            `;
+            const title = document.createElement("h4");
+            title.textContent = String(response.patient_name || "");
+            const date = document.createElement("span");
+            date.className = "activity-date";
+            date.textContent = formatActivityDate(response.created_at);
+
+            header.appendChild(title);
+            header.appendChild(date);
+
+            const blood = buildLabeledParagraph("Кръвна група", response.blood_type);
+            const city = buildLabeledParagraph("Град", response.city);
+            const status = buildLabeledParagraph("Статус", response.response_status);
+            const detailsLink = document.createElement("a");
+            detailsLink.href = buildRequestDetailsHref(response.request_id);
+            detailsLink.textContent = "Виж заявката";
+
+            card.appendChild(header);
+            card.appendChild(blood);
+            card.appendChild(city);
+            card.appendChild(status);
+            card.appendChild(detailsLink);
 
             list.appendChild(card);
         });
@@ -317,24 +364,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         saveDonationDateBtn.addEventListener("click", async () => {
-            if (!user.id) {
-                alert("Не е открит ID на потребителя. Моля, излезте и влезте отново в профила.");
-                return;
-            }
-
             if (!selectedDonationDate) {
                 alert("Моля, избери дата на последно даряване.");
                 return;
             }
 
             try {
-                const response = await fetch("../api/index.php?route=update_last_donation", {
+                const response = await authFetch("../api/index.php?route=update_last_donation", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        user_id: user.id,
                         last_donation_date: selectedDonationDate
                     })
                 });
@@ -550,13 +591,12 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
-                const response = await fetch("../api/index.php?route=delete_account", {
+                const response = await authFetch("../api/index.php?route=delete_account", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        user_id: currentUser.id,
                         password,
                         confirm_phrase: phraseInput.value.trim()
                     })
@@ -752,15 +792,12 @@ document
 
         try {
 
-            const response = await fetch("../api/index.php?route=update_profile", {
+            const response = await authFetch("../api/index.php?route=update_profile", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    user_id: user.id,
-                    ...updatedData
-                })
+                body: JSON.stringify(updatedData)
             });
             const result = await response.json();
 

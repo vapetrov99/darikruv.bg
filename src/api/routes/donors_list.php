@@ -1,14 +1,15 @@
 <?php
 
 /**
- * GET donors — joins donors with users for directory-style data.
+ * GET donors — joins donors with users for directory-style data (admin-only).
  */
 return static function (PDO $pdo): void {
     try {
+        auth_require_role('admin');
+
         $stmt = $pdo->query("
             SELECT
-                d.id,
-                d.user_id,
+                u.public_id AS user_public_id,
                 d.blood_type,
                 d.last_donation_date,
                 d.is_available,
@@ -35,7 +36,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to fetch donors',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

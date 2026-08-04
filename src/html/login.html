@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход — Дари Кръв</title>
-    <link rel="stylesheet" href="../css/style_test1.css">
+    <link rel="stylesheet" href="../css/style_darikruv.css">
     <link rel="stylesheet" href="../css/auth-pages.css">
 </head>
 <body class="auth-page">
@@ -62,6 +62,10 @@
 
                     <label for="password">Парола</label>
                     <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••">
+                    <div aria-hidden="true" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">
+                        <label for="website">Website</label>
+                        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                    </div>
                     <div class="auth-inline-link">
                         <a href="forgot-password.html">Забравена парола?</a>
                     </div>

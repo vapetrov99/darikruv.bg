@@ -182,6 +182,7 @@ registerForm.addEventListener("submit", async (event) => {
         last_name: document.getElementById("last_name").value.trim(),
         email: document.getElementById("email").value.trim(),
         password: document.getElementById("password").value,
+        website: document.getElementById("website")?.value || "",
         phone: document.getElementById("phone").value.trim(),
         city,
         is_donor: isDonorSelected(),

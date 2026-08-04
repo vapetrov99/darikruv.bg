@@ -6,6 +6,7 @@
  */
 return static function (PDO $pdo): void {
     try {
+        $authUser = auth_require_user();
         $input = json_decode(file_get_contents('php://input'), true);
 
         $patientName = trim($input['patient_name'] ?? '');
@@ -16,7 +17,8 @@ return static function (PDO $pdo): void {
         $contactPhone = trim($input['contact_phone'] ?? '');
         $description = trim($input['description'] ?? '');
         $requiredUnitsCount = (int)($input['required_units_count'] ?? 1);
-        $createdBy = isset($input['created_by']) ? (int)$input['created_by'] : null;
+        $createdBy = (int)$authUser['id'];
+        $createdByPublicId = (string)($authUser['public_id'] ?? '');
 
         if (
             $patientName === '' ||
@@ -113,7 +115,7 @@ return static function (PDO $pdo): void {
                 'description' => $description,
                 'required_units_count' => $requiredUnitsCount,
                 'fulfilled_units_count' => 0,
-                'created_by' => $createdBy
+                'created_by_public_id' => $createdByPublicId
             ]
         ], JSON_UNESCAPED_UNICODE);
     } catch (PDOException $e) {
@@ -121,7 +123,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to create blood request',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

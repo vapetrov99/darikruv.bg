@@ -5,9 +5,10 @@
  * Accepts a combined "name" field split into first/last name; supports role switch donor/requester.
  */
 return static function (PDO $pdo): void {    try {
+        $authUser = auth_require_user();
+        $userId = (int)$authUser['id'];
         $input = json_decode(file_get_contents('php://input'), true);
 
-        $userId = isset($input['user_id']) ? (int)$input['user_id'] : 0;
         $name = trim($input['name'] ?? '');
         $email = trim($input['email'] ?? '');
         $phone = trim($input['phone'] ?? '');
@@ -21,11 +22,11 @@ return static function (PDO $pdo): void {    try {
             ? (bool)$input['campaign_email_notifications']
             : null;
 
-        if ($userId < 1 || $name === '' || $email === '') {
+        if ($name === '' || $email === '') {
             http_response_code(400);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'user_id, name and email are required'
+                'message' => 'name and email are required'
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
@@ -252,7 +253,6 @@ return static function (PDO $pdo): void {    try {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to update profile',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

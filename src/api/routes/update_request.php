@@ -5,10 +5,11 @@
  */
 return static function (PDO $pdo): void {
     try {
+        $authUser = auth_require_user();
+        $userId = (int)$authUser['id'];
         $input = json_decode(file_get_contents('php://input'), true);
 
         $requestId = isset($input['request_id']) ? (int)$input['request_id'] : 0;
-        $userId = isset($input['user_id']) ? (int)$input['user_id'] : 0;
         $patientName = trim($input['patient_name'] ?? '');
         $bloodType = trim($input['blood_type'] ?? '');
         $city = trim($input['city'] ?? '');
@@ -18,11 +19,11 @@ return static function (PDO $pdo): void {
         $description = trim($input['description'] ?? '');
         $requiredUnitsCount = (int)($input['required_units_count'] ?? 1);
 
-        if ($requestId < 1 || $userId < 1) {
+        if ($requestId < 1) {
             http_response_code(400);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'request_id and user_id are required'
+                'message' => 'request_id is required'
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
@@ -63,9 +64,16 @@ return static function (PDO $pdo): void {
         }
 
         $ownerStmt = $pdo->prepare("
-            SELECT id, created_by, fulfilled_units_count, status, created_at
-            FROM blood_requests
-            WHERE id = :id
+            SELECT
+                br.id,
+                br.created_by,
+                u_creator.public_id AS created_by_public_id,
+                br.fulfilled_units_count,
+                br.status,
+                br.created_at
+            FROM blood_requests br
+            LEFT JOIN users u_creator ON u_creator.id = br.created_by
+            WHERE br.id = :id
             LIMIT 1
         ");
         $ownerStmt->execute([':id' => $requestId]);
@@ -155,21 +163,22 @@ return static function (PDO $pdo): void {
 
         $selectStmt = $pdo->prepare("
             SELECT
-                id,
-                patient_name,
-                blood_type,
-                city,
-                hospital,
-                contact_name,
-                contact_phone,
-                description,
-                status,
-                required_units_count,
-                fulfilled_units_count,
-                created_by,
-                created_at
-            FROM blood_requests
-            WHERE id = :id
+                br.id,
+                br.patient_name,
+                br.blood_type,
+                br.city,
+                br.hospital,
+                br.contact_name,
+                br.contact_phone,
+                br.description,
+                br.status,
+                br.required_units_count,
+                br.fulfilled_units_count,
+                u_creator.public_id AS created_by_public_id,
+                br.created_at
+            FROM blood_requests br
+            LEFT JOIN users u_creator ON u_creator.id = br.created_by
+            WHERE br.id = :id
             LIMIT 1
         ");
         $selectStmt->execute([':id' => $requestId]);
@@ -185,7 +194,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to update blood request',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

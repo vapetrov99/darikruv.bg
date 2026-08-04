@@ -990,3 +990,206 @@ Frontend:
 Файл:
 
 - `src/api/routes/delete_account.php`
+
+### Security hardening (детайлен етап, този чат)
+
+В тази сесия беше изпълнен цялостен security hardening на backend + frontend с фокус върху:
+
+- server-side автентикация;
+- IDOR защита;
+- role-based ограничение за чувствителни admin endpoints;
+- анти-bot защита (rate limit + honeypot);
+- XSS hardening в ключовите UI екрани;
+- browser-level защита чрез security headers.
+
+---
+
+#### 1) Server-side authentication (JWT/Bearer)
+
+**Проблем преди промяната:** API позволяваше заявки без валиден server-side identity контекст и разчиташе на client-side сесия.
+
+**Решение:**
+
+- добавен е централен helper:
+  - `src/api/helpers/auth.php`
+- добавен е auth config:
+  - `src/config/app.php` (`auth.jwt_secret`, `auth.jwt_ttl_seconds`, `auth.jwt_issuer`)
+- добавен е auth hook в API entrypoint:
+  - `src/api/index.php` (`auth_hydrate_request_user($pdo)`)
+- login вече издава реален Bearer token:
+  - `src/api/routes/login.php`
+
+**Ефект:** заявките вече могат да се валидират със server-side Bearer token вместо доверяване на client-side state.
+
+---
+
+#### 2) IDOR mitigation (махнато доверяване на `user_id` от клиента)
+
+**Проблем преди промяната:** чувствителни route-ове приемаха `user_id`/`donor_user_id`/`created_by` от body/query.
+
+**Решение:** route-овете вече взимат текущия потребител от `auth_require_user()`:
+
+- `src/api/routes/my_requests.php`
+- `src/api/routes/my_responses.php`
+- `src/api/routes/save_push_token.php`
+- `src/api/routes/update_last_donation.php`
+- `src/api/routes/update_request.php`
+- `src/api/routes/respond_to_request.php`
+- `src/api/routes/create_request.php`
+- `src/api/routes/update_profile.php`
+- `src/api/routes/delete_account.php`
+
+**Ефект:** user actions се изпълняват от authenticated identity, не от подадено от клиента ID.
+
+---
+
+#### 3) Admin lock за чувствителни endpoints
+
+**Проблем преди промяната:** PII и масови действия бяха достъпни без role gate.
+
+**Решение:**
+
+- добавен helper `auth_require_role('admin')` в:
+  - `src/api/helpers/auth.php`
+- приложен върху:
+  - `src/api/routes/users_list.php`
+  - `src/api/routes/donors_list.php`
+  - `src/api/routes/create_campaign.php`
+
+**Ефект:** тези endpoints връщат `401` без auth, `403` за non-admin, и работят само за admin.
+
+---
+
+#### 4) Register response hardening (`verification_link`)
+
+**Проблем преди промяната:** `register` връщаше `verification_link` директно в JSON.
+
+**Решение:**
+
+- добавен security флаг:
+  - `src/config/app.php` -> `security.expose_verification_link_in_register_response`
+- `src/api/routes/register.php` вече връща `verification_link` само ако флагът е изрично включен.
+
+**Ефект:** по подразбиране verification линкът не се излага в API response.
+
+---
+
+#### 5) Frontend auth synchronization (Bearer migration)
+
+**Проблем преди промяната:** frontend пазеше placeholder token и продължаваше да праща `user_id`.
+
+**Решение:**
+
+- централизирани auth utilities:
+  - `src/js/auth-guard.js` (`getAuthToken`, `getAuthHeaders`, `authFetch`)
+- login с реално съхранение на `auth_token`:
+  - `src/js/login.js`
+- миграция на защитените заявки към `authFetch` и премахване на client IDs:
+  - `src/js/profile.js`
+  - `src/js/create-request.js`
+  - `src/js/request-respond.js`
+  - `src/js/firebase-notifications.js`
+- синхронизиран server fallback при request list/details:
+  - `src/api/routes/requests_list.php`
+  - `src/api/routes/request_details.php`
+
+**Ефект:** frontend и backend вече работят с Bearer flow, без ID spoof от клиента.
+
+---
+
+#### 6) Rate limit + honeypot (anti-bot layer)
+
+**Добавено:**
+
+- helper:
+  - `src/api/helpers/rate_limit.php`
+- migration:
+  - `database/migration_rate_limit_attempts.sql`
+- schema update:
+  - `database/schema.sql` (таблица `rate_limit_attempts`)
+
+**Вързано в endpoints:**
+
+- `src/api/routes/login.php`
+- `src/api/routes/register.php`
+- `src/api/routes/request_password_reset.php`
+
+**Frontend honeypot поле (`website`) добавено в:**
+
+- `src/html/login.html` + `src/js/login.js`
+- `src/html/register.html` + `src/js/register.js`
+- `src/html/forgot-password.html` + `src/js/forgot-password.js`
+
+**Ефект:** ограничение на burst опити + early bot filtering.
+
+---
+
+#### 7) XSS hardening (frontend rendering)
+
+Критичните екрани, които рендерират потребителско съдържание, са подсилени:
+
+- `src/js/request-details.js`
+- `src/js/requests.js`
+- `src/js/profile.js`
+- `src/js/request-respond.js`
+- `src/js/welcome.js`
+- `src/js/faq-donation-map.js`
+
+**Какво е направено:**
+
+- въведен/използван `escapeHtml(...)` за dynamic content;
+- `tel:` href нормализация към digits-only;
+- safe URL изграждане (`encodeURIComponent`);
+- премахнато рисково `innerHTML += ...` при статусни UI добавки.
+
+**Ефект:** въведен от потребител HTML/JS вече се визуализира като текст, не като изпълним скрипт.
+
+---
+
+#### 8) Security headers (Nginx)
+
+Добавени в:
+
+- `docker/nginx/default.conf`
+
+Headers:
+
+- `X-Frame-Options: DENY`
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: geolocation=(self), microphone=(), camera=()`
+- `Cross-Origin-Opener-Policy: same-origin`
+- `Cross-Origin-Resource-Policy: same-origin`
+- `Content-Security-Policy: ...`
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+
+**Ефект:** допълнителна browser-level защита срещу clickjacking/XSS abuse/content sniffing.
+
+---
+
+#### 9) Operational note (env / compose)
+
+- `docker-compose.yml` беше обновен с JWT env променливи за работещ auth flow.
+- `APP_JWT_SECRET` трябва да е силна стойност (production).
+
+---
+
+#### 10) Проверки и smoke tests (изпълнени)
+
+Потвърдени сценарии:
+
+- `401` за protected routes без token;
+- `success` за protected routes с валиден token;
+- `403` за admin routes с non-admin token;
+- `success` за admin routes с admin token;
+- honeypot reject при login;
+- rate limit с `429` + `retry_after` при много неуспешни login опити;
+- register response без `verification_link` по подразбиране;
+- `rate_limit_attempts` таблица налична.
+
+---
+
+#### 11) Оставащи задачи по roadmap
+
+- Secrets cleanup и ротация (планирано за финален етап по текуща уговорка).
+- Допълнителни production hardening стъпки (по избор): изключване на тестови PHP endpoints, по-строг CSP tuning спрямо реалния asset/CDN набор.

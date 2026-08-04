@@ -1,19 +1,11 @@
 <?php
 
 /**
- * GET my_responses?user_id= — request_responses joined with blood_requests for the donor's history.
+ * GET my_responses — request_responses joined with blood_requests for authenticated user's history.
  */
 return static function (PDO $pdo): void {    try {
-        $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
-
-        if ($userId < 1) {
-            http_response_code(400);
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Valid user_id is required'
-            ], JSON_UNESCAPED_UNICODE);
-            return;
-        }
+        $authUser = auth_require_user();
+        $userId = (int)$authUser['id'];
 
         $stmt = $pdo->prepare("
             SELECT
@@ -42,7 +34,6 @@ return static function (PDO $pdo): void {    try {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to fetch user responses',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

@@ -18,7 +18,7 @@ function setAuthMessage(text, type = "info") {
 }
 
 if (isLoggedIn()) {
-    window.location.href = "welcome.html";
+    window.location.href = isAdminUser() ? "admin.html" : "welcome.html";
 }
 
 loginForm.addEventListener("submit", async (event) => {
@@ -27,7 +27,8 @@ loginForm.addEventListener("submit", async (event) => {
 
     const payload = {
         email: document.getElementById("email").value.trim(),
-        password: document.getElementById("password").value
+        password: document.getElementById("password").value,
+        website: document.getElementById("website")?.value || ""
     };
 
     if (submitBtn) {
@@ -51,12 +52,18 @@ loginForm.addEventListener("submit", async (event) => {
             return;
         }
 
-        saveLoginSession(result.data, "logged-in");
+        const authToken = result?.data?.auth_token || "";
+        if (!authToken) {
+            setAuthMessage("Липсва валиден токен за сесия.", "error");
+            return;
+        }
+
+        saveLoginSession(result.data, authToken);
         if (typeof registerPushIfEligible === "function") {
             await registerPushIfEligible(result.data);
         }
         setAuthMessage(`Успешен вход. Добре дошъл, ${result.data.first_name}!`, "success");
-        window.location.href = "welcome.html";
+        window.location.href = isAdminUser(result.data) ? "admin.html" : "welcome.html";
     } catch (_error) {
         setAuthMessage("Възникна грешка при връзка със сървъра.", "error");
     } finally {

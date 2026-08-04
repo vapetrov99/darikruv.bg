@@ -20,6 +20,23 @@ document.addEventListener("DOMContentLoaded", () => {
     let requests = [];
     const REQUEST_VISIBLE_HOURS = 48;
 
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function safeStatusClass(status) {
+        return String(status || "active").replace(/[^a-z]/gi, "");
+    }
+
+    function buildRequestDetailsHref(requestId) {
+        return `request-details.html?id=${encodeURIComponent(String(requestId ?? ""))}`;
+    }
+
     function parseMySqlDateTime(value) {
         if (!value) {
             return null;
@@ -80,24 +97,26 @@ document.addEventListener("DOMContentLoaded", () => {
             const timeUntilClose = getTimeUntilClose(request.created_at);
             const requiredUnits = Number(request.required_units_count) || 0;
             const fulfilledUnits = Number(request.fulfilled_units_count) || 0;
+            const detailsHref = buildRequestDetailsHref(request.id);
+            const statusClass = safeStatusClass(request.status);
 
             item.innerHTML = `
                 <div class="latest-request-item__top">
-                    <h4>${request.patient_name}</h4>
-                    <span class="request-status ${request.status}">${statusLabel}</span>
+                    <h4>${escapeHtml(request.patient_name)}</h4>
+                    <span class="request-status ${statusClass}">${escapeHtml(statusLabel)}</span>
                 </div>
                 <p class="latest-request-item__meta">
-                    <span>${request.blood_type}</span>
-                    <span>${request.city}</span>
+                    <span>${escapeHtml(request.blood_type)}</span>
+                    <span>${escapeHtml(request.city)}</span>
                 </p>
-                <p class="latest-request-item__hospital">${request.hospital}</p>
+                <p class="latest-request-item__hospital">${escapeHtml(request.hospital)}</p>
                 <p class="latest-request-item__progress">${fulfilledUnits} / ${requiredUnits} дарения</p>
-                <p class="latest-request-item__timer">Затваря след: ${timeUntilClose}</p>
+                <p class="latest-request-item__timer">Затваря след: ${escapeHtml(timeUntilClose)}</p>
             `;
 
             const openDetails = () => {
                 if (request.id) {
-                    window.location.href = `request-details.html?id=${request.id}`;
+                    window.location.href = detailsHref;
                 }
             };
 
@@ -142,30 +161,32 @@ document.addEventListener("DOMContentLoaded", () => {
             const statusLabel = typeof formatRequestStatusLabel === "function"
                 ? formatRequestStatusLabel(request.status)
                 : request.status;
+            const statusClass = safeStatusClass(request.status);
+            const safeRequestId = Number(request.id) || 0;
             const showRespond = typeof canShowRespondButton === "function"
                 && canShowRespondButton(currentUser, request);
             const respondConfig = showRespond && typeof getRespondButtonConfig === "function"
                 ? getRespondButtonConfig(request)
                 : { hidden: true };
             const respondButtonHtml = !respondConfig.hidden
-                ? `<button type="button" class="btn respond-btn" data-request-id="${request.id}" data-action="${respondConfig.action}">${respondConfig.text}</button>`
+                ? `<button type="button" class="btn respond-btn" data-request-id="${safeRequestId}" data-action="${escapeHtml(respondConfig.action)}">${escapeHtml(respondConfig.text)}</button>`
                 : "";
 
             card.innerHTML = `
-                <h4>${request.patient_name}</h4>
+                <h4>${escapeHtml(request.patient_name)}</h4>
 
                 <div class="request-info">
-                    <span class="request-badge">Кръв: ${request.blood_type}</span>
-                    <span class="request-badge city">${request.city}</span>
-                    <span class="request-status ${request.status}">${statusLabel}</span>
+                    <span class="request-badge">Кръв: ${escapeHtml(request.blood_type)}</span>
+                    <span class="request-badge city">${escapeHtml(request.city)}</span>
+                    <span class="request-status ${statusClass}">${escapeHtml(statusLabel)}</span>
                 </div>
 
-                <p><strong>Болница:</strong> ${request.hospital}</p>
+                <p><strong>Болница:</strong> ${escapeHtml(request.hospital)}</p>
 
-                <p><strong>Контакт:</strong> ${request.contact_name}</p>
-                <p><strong>Телефон:</strong> ${request.contact_phone}</p>
+                <p><strong>Контакт:</strong> ${escapeHtml(request.contact_name)}</p>
+                <p><strong>Телефон:</strong> ${escapeHtml(request.contact_phone)}</p>
 
-                <p>${request.description || "Няма допълнително описание."}</p>
+                <p>${escapeHtml(request.description || "Няма допълнително описание.")}</p>
 
                 <div class="request-progress">
                     <span>${fulfilledUnits} / ${requiredUnits} дарения</span>
@@ -174,8 +195,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </div>
 
-                <span class="request-date">Публикувана: ${request.created_at}</span>
-                <span class="request-timer">Затваря след: ${timeUntilClose}</span>
+                <span class="request-date">Публикувана: ${escapeHtml(request.created_at)}</span>
+                <span class="request-timer">Затваря след: ${escapeHtml(timeUntilClose)}</span>
 
                 <div class="request-card-actions">
                     ${respondButtonHtml}
@@ -186,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!request.id) {
                     return;
                 }
-                window.location.href = `request-details.html?id=${request.id}`;
+                window.location.href = buildRequestDetailsHref(request.id);
             };
 
             card.addEventListener("click", openDetails);
@@ -253,9 +274,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function loadRequests() {
         try {
-            const response = await fetch(getApiUrl("requests", {
-                user_id: currentUser?.id || undefined
-            }));
+            const response = await authFetch(getApiUrl("requests"));
             const result = await response.json();
 
             if (!response.ok || result.status !== "success") {

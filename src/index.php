@@ -1,4 +1,4 @@
 <?php
 
-echo "DariKruv backend works!";
-phpinfo();
+header('Location: /html/welcome.html', true, 302);
+exit;

@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (!currentUser || !Number.isInteger(Number(currentUser.id))) {
+        if (!currentUser || typeof hasUserIdentity !== "function" || !hasUserIdentity(currentUser)) {
             showMessage("Трябва да си влязъл в профила си.", "error");
             return;
         }
@@ -73,20 +73,18 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             let response;
             if (isEditMode) {
-                response = await fetch("../api/index.php?route=update_request", {
+                response = await authFetch("../api/index.php?route=update_request", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
                         request_id: editRequestId,
-                        user_id: Number(currentUser.id),
                         ...requestData
                     })
                 });
             } else {
-                requestData.created_by = Number(currentUser.id);
-                response = await fetch("../api/index.php?route=create_request", {
+                response = await authFetch("../api/index.php?route=create_request", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"

@@ -45,7 +45,11 @@ document.addEventListener("DOMContentLoaded", () => {
         renderGreeting(greetingEl);
         const deleted = new URLSearchParams(window.location.search).get("account_deleted");
         if (deleted === "1") {
-            greetingEl.innerHTML += ' <span style="color:#2e7d32;font-weight:600">Профилът е изтрит успешно.</span>';
+            const status = document.createElement("span");
+            status.style.color = "#2e7d32";
+            status.style.fontWeight = "600";
+            status.textContent = " Профилът е изтрит успешно.";
+            greetingEl.appendChild(status);
             window.history.replaceState({}, "", window.location.pathname);
         }
     }
@@ -107,7 +111,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof isLoggedIn === "function" && isLoggedIn() && user) {
             const name = typeof getDisplayName === "function" ? getDisplayName(user) : "Потребител";
             const blood = user.blood_type ? ` · ${user.blood_type}` : "";
-            el.innerHTML = `Здравей, <strong>${escapeHtml(name)}</strong>${escapeHtml(blood)}`;
+            el.textContent = "";
+            el.append("Здравей, ");
+            const strong = document.createElement("strong");
+            strong.textContent = name;
+            el.appendChild(strong);
+            el.append(blood);
             return;
         }
         el.textContent = "Избери град, за да видиш актуални заявки и акции";
@@ -132,20 +141,39 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        card.textContent = "";
+
         const inCity = allRequests.filter((r) => r.city === city);
         const latest = inCity[0];
 
+        const header = document.createElement("div");
+        header.className = "welcome-card-header";
+
         if (!latest) {
-            card.innerHTML = `
-                <div class="welcome-card-header">
-                    <h2>Последна заявка · ${escapeHtml(city)}</h2>
-                </div>
-                <div class="welcome-request-empty">
-                    <p>Няма активна заявка в ${escapeHtml(city)} през последните 48 часа.</p>
-                    <p style="margin-top:8px">Можеш да следиш други градове или да се включиш в кръвна акция.</p>
-                    <a href="request.html" class="welcome-link-btn" style="display:inline-block;margin-top:12px">Всички заявки →</a>
-                </div>
-            `;
+            const title = document.createElement("h2");
+            title.textContent = `Последна заявка · ${city}`;
+            header.appendChild(title);
+
+            const emptyWrap = document.createElement("div");
+            emptyWrap.className = "welcome-request-empty";
+            const line1 = document.createElement("p");
+            line1.textContent = `Няма активна заявка в ${city} през последните 48 часа.`;
+            const line2 = document.createElement("p");
+            line2.style.marginTop = "8px";
+            line2.textContent = "Можеш да следиш други градове или да се включиш в кръвна акция.";
+            const requestsLink = document.createElement("a");
+            requestsLink.href = "request.html";
+            requestsLink.className = "welcome-link-btn";
+            requestsLink.style.display = "inline-block";
+            requestsLink.style.marginTop = "12px";
+            requestsLink.textContent = "Всички заявки →";
+
+            emptyWrap.appendChild(line1);
+            emptyWrap.appendChild(line2);
+            emptyWrap.appendChild(requestsLink);
+
+            card.appendChild(header);
+            card.appendChild(emptyWrap);
             return;
         }
 
@@ -153,41 +181,87 @@ document.addEventListener("DOMContentLoaded", () => {
         const required = Number(latest.required_units_count) || 0;
         const fulfilled = Number(latest.fulfilled_units_count) || 0;
         const progress = required > 0 ? Math.min(100, (fulfilled / required) * 100) : 0;
-        const matchPill = user?.blood_type && user.blood_type === latest.blood_type
-            ? '<span class="welcome-pill welcome-pill--match">Съвпада с вашата група</span>'
-            : "";
         const detailsHref = latest.id
-            ? `request-details.html?id=${latest.id}`
+            ? `request-details.html?id=${encodeURIComponent(String(latest.id))}`
             : "request.html";
-        const loginNote = typeof isLoggedIn === "function" && !isLoggedIn()
-            ? '<p style="margin-top:8px"><a href="login.html" class="welcome-link-btn">Влез</a>, за да отговориш на заявката.</p>'
-            : "";
+        const title = document.createElement("h2");
+        title.textContent = `Спешна нужда · ${city}`;
+        header.appendChild(title);
+        if (user?.blood_type && user.blood_type === latest.blood_type) {
+            const matchPill = document.createElement("span");
+            matchPill.className = "welcome-pill welcome-pill--match";
+            matchPill.textContent = "Съвпада с вашата група";
+            header.appendChild(matchPill);
+        }
 
-        card.innerHTML = `
-            <div class="welcome-card-header">
-                <h2>Спешна нужда · ${escapeHtml(city)}</h2>
-                ${matchPill}
-            </div>
-            <div class="welcome-request-body">
-                <h3>${escapeHtml(latest.patient_name || "Заявка за кръв")}</h3>
-                <div class="welcome-request-meta">
-                    <span class="welcome-badge welcome-badge--blood">${escapeHtml(latest.blood_type || "—")}</span>
-                    <span class="welcome-badge">${escapeHtml(latest.status || "активна")}</span>
-                </div>
-                <p><strong>Болница:</strong> ${escapeHtml(latest.hospital || "—")}</p>
-                <div class="welcome-progress">
-                    <span>${fulfilled} / ${required} дарения</span>
-                    <div class="welcome-progress-bar">
-                        <div class="welcome-progress-fill" style="width:${progress}%"></div>
-                    </div>
-                </div>
-                <div class="welcome-request-footer">
-                    <span class="welcome-timer">⏱ Затваря след: ${escapeHtml(getTimeUntilClose(latest.created_at))}</span>
-                    <a href="${detailsHref}" class="welcome-link-btn">Виж детайли →</a>
-                </div>
-                ${loginNote}
-            </div>
-        `;
+        const body = document.createElement("div");
+        body.className = "welcome-request-body";
+
+        const requestTitle = document.createElement("h3");
+        requestTitle.textContent = String(latest.patient_name || "Заявка за кръв");
+
+        const meta = document.createElement("div");
+        meta.className = "welcome-request-meta";
+        const bloodBadge = document.createElement("span");
+        bloodBadge.className = "welcome-badge welcome-badge--blood";
+        bloodBadge.textContent = String(latest.blood_type || "—");
+        const statusBadge = document.createElement("span");
+        statusBadge.className = "welcome-badge";
+        statusBadge.textContent = String(latest.status || "активна");
+        meta.appendChild(bloodBadge);
+        meta.appendChild(statusBadge);
+
+        const hospital = document.createElement("p");
+        const hospitalLabel = document.createElement("strong");
+        hospitalLabel.textContent = "Болница:";
+        hospital.appendChild(hospitalLabel);
+        hospital.append(` ${String(latest.hospital || "—")}`);
+
+        const progressWrap = document.createElement("div");
+        progressWrap.className = "welcome-progress";
+        const progressText = document.createElement("span");
+        progressText.textContent = `${fulfilled} / ${required} дарения`;
+        const progressBar = document.createElement("div");
+        progressBar.className = "welcome-progress-bar";
+        const progressFill = document.createElement("div");
+        progressFill.className = "welcome-progress-fill";
+        progressFill.style.width = `${progress}%`;
+        progressBar.appendChild(progressFill);
+        progressWrap.appendChild(progressText);
+        progressWrap.appendChild(progressBar);
+
+        const footer = document.createElement("div");
+        footer.className = "welcome-request-footer";
+        const timer = document.createElement("span");
+        timer.className = "welcome-timer";
+        timer.textContent = `⏱ Затваря след: ${getTimeUntilClose(latest.created_at)}`;
+        const detailsLink = document.createElement("a");
+        detailsLink.href = detailsHref;
+        detailsLink.className = "welcome-link-btn";
+        detailsLink.textContent = "Виж детайли →";
+        footer.appendChild(timer);
+        footer.appendChild(detailsLink);
+
+        body.appendChild(requestTitle);
+        body.appendChild(meta);
+        body.appendChild(hospital);
+        body.appendChild(progressWrap);
+        body.appendChild(footer);
+
+        if (typeof isLoggedIn === "function" && !isLoggedIn()) {
+            const loginNote = document.createElement("p");
+            loginNote.style.marginTop = "8px";
+            const loginLink = document.createElement("a");
+            loginLink.href = "login.html";
+            loginLink.className = "welcome-link-btn";
+            loginLink.textContent = "Влез";
+            loginNote.appendChild(loginLink);
+            loginNote.append(", за да отговориш на заявката.");
+            body.appendChild(loginNote);
+        }
+
+        card.appendChild(header);
+        card.appendChild(body);
     }
 
     function renderCampaigns(city) {
@@ -200,29 +274,58 @@ document.addEventListener("DOMContentLoaded", () => {
             .filter((c) => c.city === city)
             .slice(0, 4);
 
+        list.textContent = "";
+
         if (!campaigns.length) {
-            list.innerHTML = `
-                <div class="welcome-campaigns-empty" style="flex:1">
-                    Няма въведени акции за ${escapeHtml(city)}.
-                    <a href="campaigns.html" class="welcome-link-btn" style="display:block;margin-top:8px">Виж препоръчани акции →</a>
-                </div>
-            `;
+            const empty = document.createElement("div");
+            empty.className = "welcome-campaigns-empty";
+            empty.style.flex = "1";
+            empty.append(`Няма въведени акции за ${city}.`);
+
+            const link = document.createElement("a");
+            link.href = "campaigns.html";
+            link.className = "welcome-link-btn";
+            link.style.display = "block";
+            link.style.marginTop = "8px";
+            link.textContent = "Виж препоръчани акции →";
+            empty.appendChild(link);
+
+            list.appendChild(empty);
             return;
         }
 
-        list.innerHTML = campaigns.map((c) => `
-            <a class="welcome-campaign-mini"
-               href="${escapeHtml(c.href)}"
-               target="_blank"
-               rel="noopener noreferrer">
-                <img src="${escapeHtml(c.image)}" alt="${escapeHtml(c.title)}">
-                <div class="welcome-campaign-mini-body">
-                    <p class="welcome-campaign-mini-date">${escapeHtml(c.date)}</p>
-                    <h3>${escapeHtml(c.title)}</h3>
-                    <p>${escapeHtml(c.description)}</p>
-                </div>
-            </a>
-        `).join("");
+        campaigns.forEach((campaign) => {
+            const card = document.createElement("a");
+            card.className = "welcome-campaign-mini";
+            card.href = sanitizeHttpUrl(campaign.href, "campaigns.html");
+            card.target = "_blank";
+            card.rel = "noopener noreferrer";
+
+            const image = document.createElement("img");
+            image.src = sanitizeHttpUrl(campaign.image, "");
+            image.alt = String(campaign.title || "Кампания");
+
+            const body = document.createElement("div");
+            body.className = "welcome-campaign-mini-body";
+
+            const date = document.createElement("p");
+            date.className = "welcome-campaign-mini-date";
+            date.textContent = String(campaign.date || "");
+
+            const title = document.createElement("h3");
+            title.textContent = String(campaign.title || "");
+
+            const description = document.createElement("p");
+            description.textContent = String(campaign.description || "");
+
+            body.appendChild(date);
+            body.appendChild(title);
+            body.appendChild(description);
+
+            card.appendChild(image);
+            card.appendChild(body);
+            list.appendChild(card);
+        });
     }
 
     function renderDonorCard() {
@@ -231,27 +334,55 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        card.textContent = "";
+
         const user = typeof getCurrentUser === "function" ? getCurrentUser() : null;
         const loggedIn = typeof isLoggedIn === "function" && isLoggedIn();
 
         if (!loggedIn || !user) {
-            card.innerHTML = `
-                <div class="welcome-card-header"><h2>Готов ли си да дариш?</h2></div>
-                <p class="welcome-donor-status">45 минути · 3 живота</p>
-                <p class="welcome-donor-hint">Регистрирай се, за да получаваш известия при нова заявка в твоя град и кръвна група.</p>
-                <a href="register.html" class="btn">Стани дарител</a>
-            `;
+            const header = document.createElement("div");
+            header.className = "welcome-card-header";
+            const title = document.createElement("h2");
+            title.textContent = "Готов ли си да дариш?";
+            header.appendChild(title);
+            const status = document.createElement("p");
+            status.className = "welcome-donor-status";
+            status.textContent = "45 минути · 3 живота";
+            const hint = document.createElement("p");
+            hint.className = "welcome-donor-hint";
+            hint.textContent = "Регистрирай се, за да получаваш известия при нова заявка в твоя град и кръвна група.";
+            const link = document.createElement("a");
+            link.href = "register.html";
+            link.className = "btn";
+            link.textContent = "Стани дарител";
+            card.appendChild(header);
+            card.appendChild(status);
+            card.appendChild(hint);
+            card.appendChild(link);
             return;
         }
 
         const lastDonation = normalizeDate(user.last_donation_date);
         if (!lastDonation) {
-            card.innerHTML = `
-                <div class="welcome-card-header"><h2>Твоят статус</h2></div>
-                <p class="welcome-donor-status">Последно даряване не е въведено</p>
-                <p class="welcome-donor-hint">В профила можеш да отбележиш дата и да следиш кога отново можеш да дариш (мин. 60 дни).</p>
-                <a href="profile.html" class="welcome-link-btn">Към профила →</a>
-            `;
+            const header = document.createElement("div");
+            header.className = "welcome-card-header";
+            const title = document.createElement("h2");
+            title.textContent = "Твоят статус";
+            header.appendChild(title);
+            const status = document.createElement("p");
+            status.className = "welcome-donor-status";
+            status.textContent = "Последно даряване не е въведено";
+            const hint = document.createElement("p");
+            hint.className = "welcome-donor-hint";
+            hint.textContent = "В профила можеш да отбележиш дата и да следиш кога отново можеш да дариш (мин. 60 дни).";
+            const link = document.createElement("a");
+            link.href = "profile.html";
+            link.className = "welcome-link-btn";
+            link.textContent = "Към профила →";
+            card.appendChild(header);
+            card.appendChild(status);
+            card.appendChild(hint);
+            card.appendChild(link);
             return;
         }
 
@@ -260,28 +391,56 @@ document.addEventListener("DOMContentLoaded", () => {
         const canDonate = today >= nextDate;
 
         if (canDonate) {
-            card.innerHTML = `
-                <div class="welcome-card-header">
-                    <h2>Твоят статус</h2>
-                    <span class="welcome-pill welcome-pill--match">Можеш да дариш</span>
-                </div>
-                <p class="welcome-donor-status">Готов/а си за следващо даряване</p>
-                <p class="welcome-donor-hint">Виж кръвните акции в ${escapeHtml(activeCity)} или отговори на активна заявка.</p>
-                <a href="campaigns.html" class="btn">Кръвни акции</a>
-            `;
+            const header = document.createElement("div");
+            header.className = "welcome-card-header";
+            const title = document.createElement("h2");
+            title.textContent = "Твоят статус";
+            const pill = document.createElement("span");
+            pill.className = "welcome-pill welcome-pill--match";
+            pill.textContent = "Можеш да дариш";
+            header.appendChild(title);
+            header.appendChild(pill);
+            const status = document.createElement("p");
+            status.className = "welcome-donor-status";
+            status.textContent = "Готов/а си за следващо даряване";
+            const hint = document.createElement("p");
+            hint.className = "welcome-donor-hint";
+            hint.textContent = `Виж кръвните акции в ${activeCity} или отговори на активна заявка.`;
+            const link = document.createElement("a");
+            link.href = "campaigns.html";
+            link.className = "btn";
+            link.textContent = "Кръвни акции";
+            card.appendChild(header);
+            card.appendChild(status);
+            card.appendChild(hint);
+            card.appendChild(link);
             return;
         }
 
         const daysLeft = daysBetween(today, nextDate);
-        card.innerHTML = `
-            <div class="welcome-card-header">
-                <h2>Твоят статус</h2>
-                <span class="welcome-pill welcome-pill--wait">Изчакване</span>
-            </div>
-            <p class="welcome-donor-status">Следващо даряване след ~${daysLeft} дни</p>
-            <p class="welcome-donor-hint">Ориентировъчно от ${formatBgDate(nextDate)}</p>
-            <a href="faq.html#where" class="welcome-link-btn">Къде да даря →</a>
-        `;
+        const header = document.createElement("div");
+        header.className = "welcome-card-header";
+        const title = document.createElement("h2");
+        title.textContent = "Твоят статус";
+        const pill = document.createElement("span");
+        pill.className = "welcome-pill welcome-pill--wait";
+        pill.textContent = "Изчакване";
+        header.appendChild(title);
+        header.appendChild(pill);
+        const status = document.createElement("p");
+        status.className = "welcome-donor-status";
+        status.textContent = `Следващо даряване след ~${daysLeft} дни`;
+        const hint = document.createElement("p");
+        hint.className = "welcome-donor-hint";
+        hint.textContent = `Ориентировъчно от ${formatBgDate(nextDate)}`;
+        const link = document.createElement("a");
+        link.href = "faq.html#where";
+        link.className = "welcome-link-btn";
+        link.textContent = "Къде да даря →";
+        card.appendChild(header);
+        card.appendChild(status);
+        card.appendChild(hint);
+        card.appendChild(link);
     }
 });
 
@@ -347,10 +506,18 @@ function formatBgDate(dateString) {
     });
 }
 
-function escapeHtml(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+function sanitizeHttpUrl(value, fallback) {
+    const normalizedFallback = String(fallback || "");
+    const raw = String(value || "").trim();
+    if (!raw) {
+        return normalizedFallback;
+    }
+
+    try {
+        const url = new URL(raw, window.location.origin);
+        const isHttp = url.protocol === "http:" || url.protocol === "https:";
+        return isHttp ? url.toString() : normalizedFallback;
+    } catch (_error) {
+        return normalizedFallback;
+    }
 }

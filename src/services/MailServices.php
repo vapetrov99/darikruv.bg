@@ -14,10 +14,16 @@ require_once __DIR__ . '/../vendor/autoload.php';
 class MailService
 {
     private array $config;
+    private ?string $lastError = null;
 
     public function __construct()
     {
         $this->config = require __DIR__ . '/../config/mail.php';
+    }
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
     }
 
     /**
@@ -26,6 +32,7 @@ class MailService
     public function sendVerificationEmail(string $toEmail, string $toName, string $verificationLink): bool
     {
         $mail = new PHPMailer(true);
+        $this->lastError = null;
 
         try {
             $mail->isSMTP();
@@ -34,6 +41,7 @@ class MailService
             $mail->Username = $this->config['username'];
             $mail->Password = $this->config['password'];
             $mail->Port = $this->config['port'];
+            $mail->Timeout = 10;
             $mail->CharSet = 'UTF-8';
 
             // Port 587 uses STARTTLS; 465 uses implicit TLS (SMTPS).
@@ -64,7 +72,8 @@ class MailService
 
             return $mail->send();
         } catch (Exception $e) {
-            error_log('Mail error: ' . $mail->ErrorInfo);
+            $this->lastError = (string)($mail->ErrorInfo ?: $e->getMessage());
+            error_log('Mail error: ' . $this->lastError);
             return false;
         }
     }
@@ -82,7 +91,9 @@ class MailService
         string $hospital
     ): bool {
         $mail = new PHPMailer(true);
-        $detailsLink = "http://localhost:8080/html/request-details.html?id={$requestId}";
+        $appConfig = require __DIR__ . '/../config/app.php';
+        $detailsLink = $appConfig['base_url'] . '/html/request-details.html?id=' . $requestId;
+        $this->lastError = null;
 
         try {
             $mail->isSMTP();
@@ -91,6 +102,7 @@ class MailService
             $mail->Username = $this->config['username'];
             $mail->Password = $this->config['password'];
             $mail->Port = $this->config['port'];
+            $mail->Timeout = 10;
             $mail->CharSet = 'UTF-8';
 
             if ($this->config['port'] === 465) {
@@ -119,7 +131,8 @@ class MailService
 
             return $mail->send();
         } catch (Exception $e) {
-            error_log('Mail error: ' . $mail->ErrorInfo);
+            $this->lastError = (string)($mail->ErrorInfo ?: $e->getMessage());
+            error_log('Mail error: ' . $this->lastError);
             return false;
         }
     }
@@ -137,6 +150,7 @@ class MailService
         string $campaignDescription = ''
     ): bool {
         $mail = new PHPMailer(true);
+        $this->lastError = null;
 
         try {
             $mail->isSMTP();
@@ -145,6 +159,7 @@ class MailService
             $mail->Username = $this->config['username'];
             $mail->Password = $this->config['password'];
             $mail->Port = $this->config['port'];
+            $mail->Timeout = 10;
             $mail->CharSet = 'UTF-8';
 
             if ($this->config['port'] === 465) {
@@ -179,7 +194,8 @@ class MailService
 
             return $mail->send();
         } catch (Exception $e) {
-            error_log('Mail error: ' . $mail->ErrorInfo);
+            $this->lastError = (string)($mail->ErrorInfo ?: $e->getMessage());
+            error_log('Mail error: ' . $this->lastError);
             return false;
         }
     }
@@ -190,6 +206,7 @@ class MailService
     public function sendPasswordResetEmail(string $toEmail, string $toName, string $resetLink): bool
     {
         $mail = new PHPMailer(true);
+        $this->lastError = null;
 
         try {
             $mail->isSMTP();
@@ -198,6 +215,7 @@ class MailService
             $mail->Username = $this->config['username'];
             $mail->Password = $this->config['password'];
             $mail->Port = $this->config['port'];
+            $mail->Timeout = 10;
             $mail->CharSet = 'UTF-8';
 
             if ($this->config['port'] === 465) {
@@ -226,7 +244,8 @@ class MailService
 
             return $mail->send();
         } catch (Exception $e) {
-            error_log('Mail error: ' . $mail->ErrorInfo);
+            $this->lastError = (string)($mail->ErrorInfo ?: $e->getMessage());
+            error_log('Mail error: ' . $this->lastError);
             return false;
         }
     }

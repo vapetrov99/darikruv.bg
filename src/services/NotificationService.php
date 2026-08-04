@@ -24,7 +24,7 @@ class NotificationService
     }
 
     /**
-     * Main entry: find donors compatible with $bloodType, then send push + email (if implemented).
+     * Main entry: find donors compatible with $bloodType, send push now, queue emails for async worker.
      */
     public function notifyDonorsForRequest(int $requestId, string $bloodType, string $city, string $hospital): void
     {
@@ -46,33 +46,200 @@ class NotificationService
             $this->logDelivery($requestId, (int)$donor['id'], 'push', $pushSent ? 'sent' : 'failed', $pushSent ? null : 'Push delivery failed');
 
             $fullName = trim(($donor['first_name'] ?? '') . ' ' . ($donor['last_name'] ?? ''));
-            $emailSent = false;
             $wantsEmail = (int)($donor['email_notifications'] ?? 0) === 1;
             if (
                 $wantsEmail
                 && method_exists($this->mailService, 'sendRequestNotificationEmail')
             ) {
-                $emailSent = (bool)call_user_func(
-                    [$this->mailService, 'sendRequestNotificationEmail'],
+                $this->enqueueRequestEmail(
+                    $requestId,
+                    (int)$donor['id'],
                     (string)$donor['email'],
                     $fullName !== '' ? $fullName : 'Донор',
-                    $requestId,
                     $bloodType,
                     $city,
                     $hospital
                 );
             }
-
-            if ($wantsEmail) {
-                $this->logDelivery(
-                    $requestId,
-                    (int)$donor['id'],
-                    'email',
-                    $emailSent ? 'sent' : 'failed',
-                    $emailSent ? null : 'Email delivery failed'
-                );
-            }
         }
+
+        // Optional inline draining to reduce queue growth during low traffic.
+        try {
+            $this->processEmailQueue(5);
+        } catch (Throwable $e) {
+            error_log('Email queue process error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Enqueues request notification email for asynchronous processing.
+     *
+     * If a queue row already exists for this request+donor pair, reset it back to pending.
+     */
+    private function enqueueRequestEmail(
+        int $requestId,
+        int $donorUserId,
+        string $email,
+        string $name,
+        string $bloodType,
+        string $city,
+        string $hospital
+    ): void {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO email_queue (
+                request_id,
+                donor_user_id,
+                to_email,
+                to_name,
+                blood_type,
+                city,
+                hospital,
+                status,
+                attempts,
+                max_attempts,
+                next_attempt_at,
+                last_error
+            )
+            VALUES (
+                :request_id,
+                :donor_user_id,
+                :to_email,
+                :to_name,
+                :blood_type,
+                :city,
+                :hospital,
+                'pending',
+                0,
+                3,
+                CURRENT_TIMESTAMP,
+                NULL
+            )
+            ON DUPLICATE KEY UPDATE
+                to_email = VALUES(to_email),
+                to_name = VALUES(to_name),
+                blood_type = VALUES(blood_type),
+                city = VALUES(city),
+                hospital = VALUES(hospital),
+                status = 'pending',
+                attempts = 0,
+                next_attempt_at = CURRENT_TIMESTAMP,
+                last_error = NULL
+        ");
+        $stmt->execute([
+            ':request_id' => $requestId,
+            ':donor_user_id' => $donorUserId,
+            ':to_email' => $email,
+            ':to_name' => $name,
+            ':blood_type' => $bloodType,
+            ':city' => $city,
+            ':hospital' => $hospital
+        ]);
+    }
+
+    /**
+     * Drains a batch from email_queue and attempts SMTP delivery.
+     *
+     * @return array{selected:int,sent:int,failed:int,deferred:int}
+     */
+    public function processEmailQueue(int $batchSize = 20): array
+    {
+        $batchSize = max(1, min(100, $batchSize));
+
+        $stmt = $this->pdo->prepare("
+            SELECT
+                id,
+                request_id,
+                donor_user_id,
+                to_email,
+                to_name,
+                blood_type,
+                city,
+                hospital,
+                attempts,
+                max_attempts
+            FROM email_queue
+            WHERE status = 'pending'
+              AND next_attempt_at <= CURRENT_TIMESTAMP
+            ORDER BY id ASC
+            LIMIT :batch_size
+        ");
+        $stmt->bindValue(':batch_size', $batchSize, PDO::PARAM_INT);
+        $stmt->execute();
+        $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $result = [
+            'selected' => count($jobs),
+            'sent' => 0,
+            'failed' => 0,
+            'deferred' => 0
+        ];
+
+        foreach ($jobs as $job) {
+            $sent = (bool)call_user_func(
+                [$this->mailService, 'sendRequestNotificationEmail'],
+                (string)$job['to_email'],
+                (string)$job['to_name'],
+                (int)$job['request_id'],
+                (string)$job['blood_type'],
+                (string)$job['city'],
+                (string)$job['hospital']
+            );
+
+            if ($sent) {
+                $updateSentStmt = $this->pdo->prepare("
+                    UPDATE email_queue
+                    SET status = 'sent',
+                        sent_at = CURRENT_TIMESTAMP,
+                        last_error = NULL
+                    WHERE id = :id
+                ");
+                $updateSentStmt->execute([':id' => $job['id']]);
+                $this->logDelivery((int)$job['request_id'], (int)$job['donor_user_id'], 'email', 'sent', null);
+                $result['sent']++;
+                continue;
+            }
+
+            $error = $this->mailService->getLastError() ?: 'Email delivery failed';
+            $attempts = (int)$job['attempts'] + 1;
+            $maxAttempts = (int)$job['max_attempts'];
+
+            if ($attempts >= $maxAttempts) {
+                $updateFailedStmt = $this->pdo->prepare("
+                    UPDATE email_queue
+                    SET status = 'failed',
+                        attempts = :attempts,
+                        last_error = :last_error
+                    WHERE id = :id
+                ");
+                $updateFailedStmt->execute([
+                    ':attempts' => $attempts,
+                    ':last_error' => substr($error, 0, 250),
+                    ':id' => $job['id']
+                ]);
+                $this->logDelivery((int)$job['request_id'], (int)$job['donor_user_id'], 'email', 'failed', $error);
+                $result['failed']++;
+                continue;
+            }
+
+            $retryDelaySeconds = min(300, 30 * $attempts);
+            $nextAttempt = date('Y-m-d H:i:s', time() + $retryDelaySeconds);
+            $updateDeferredStmt = $this->pdo->prepare("
+                UPDATE email_queue
+                SET attempts = :attempts,
+                    next_attempt_at = :next_attempt_at,
+                    last_error = :last_error
+                WHERE id = :id
+            ");
+            $updateDeferredStmt->execute([
+                ':attempts' => $attempts,
+                ':next_attempt_at' => $nextAttempt,
+                ':last_error' => substr($error, 0, 250),
+                ':id' => $job['id']
+            ]);
+            $result['deferred']++;
+        }
+
+        return $result;
     }
 
     /**

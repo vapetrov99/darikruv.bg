@@ -3,7 +3,7 @@
 /**
  * POST save_push_token
  *
- * JSON body: { "user_id": number, "token": string, "enabled": boolean (optional, default true) }
+ * JSON body: { "token": string, "enabled": boolean (optional, default true) }
  *
  * Persists the FCM registration token for a donor so the server can target push notifications.
  * Rules:
@@ -12,18 +12,19 @@
  */
 return static function (PDO $pdo): void {
     try {
+        $authUser = auth_require_user();
+        $userId = (int)$authUser['id'];
         $input = json_decode(file_get_contents('php://input'), true);
 
-        $userId = (int)($input['user_id'] ?? 0);
         $token = trim($input['token'] ?? '');
         // Client may disable notifications by sending enabled: false.
         $enabled = isset($input['enabled']) ? (bool)$input['enabled'] : true;
 
-        if ($userId < 1 || $token === '') {
+        if ($token === '') {
             http_response_code(400);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'user_id and token are required'
+                'message' => 'token is required'
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
@@ -70,7 +71,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Failed to save push token',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

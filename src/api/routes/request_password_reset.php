@@ -5,8 +5,22 @@
  * Returns generic success message to avoid leaking whether the email exists.
  */
 return static function (PDO $pdo): void {
+    require_once __DIR__ . '/../helpers/rate_limit.php';
+
     try {
         $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        if (rate_limit_honeypot_filled($input)) {
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Ако имейлът съществува в системата, ще получиш линк за нова парола.'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
         $email = trim($input['email'] ?? '');
 
         if ($email === '') {
@@ -23,6 +37,28 @@ return static function (PDO $pdo): void {
             echo json_encode([
                 'status' => 'error',
                 'message' => 'Invalid email format'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $ipLimit = rate_limit_check_and_hit($pdo, 'password_reset_ip', rate_limit_get_client_ip(), 6, 900);
+        if (!$ipLimit['allowed']) {
+            http_response_code(429);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Твърде много заявки за нова парола. Опитай отново след малко.',
+                'retry_after' => (int)$ipLimit['retry_after']
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $emailLimit = rate_limit_check_and_hit($pdo, 'password_reset_email', $email, 4, 900);
+        if (!$emailLimit['allowed']) {
+            http_response_code(429);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Твърде много заявки за този имейл. Опитай отново след малко.',
+                'retry_after' => (int)$emailLimit['retry_after']
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
@@ -70,7 +106,6 @@ return static function (PDO $pdo): void {
         echo json_encode([
             'status' => 'error',
             'message' => 'Password reset request failed',
-            'error' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }
 };

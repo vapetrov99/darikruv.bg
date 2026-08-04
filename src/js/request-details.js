@@ -17,8 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let comments = [];
 
     function buildTelHref(phone) {
-        const normalized = String(phone || "").replace(/[\s\-().]/g, "");
-        return normalized ? `tel:${normalized}` : "";
+        const digitsOnly = String(phone || "").replace(/\D/g, "");
+        return digitsOnly ? `tel:${digitsOnly}` : "";
     }
 
     const commentForm = document.getElementById("commentForm");
@@ -31,10 +31,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function showNotFound(message = "Заявката не е намерена") {
-        document.querySelector(".details-card").innerHTML = `
-            <h2>${message}</h2>
-            <p>Върни се към списъка със заявки.</p>
-        `;
+        const detailsCard = document.querySelector(".details-card");
+        if (!detailsCard) {
+            return;
+        }
+
+        detailsCard.textContent = "";
+        const title = document.createElement("h2");
+        title.textContent = String(message || "Заявката не е намерена");
+        const subtitle = document.createElement("p");
+        subtitle.textContent = "Върни се към списъка със заявки.";
+        detailsCard.appendChild(title);
+        detailsCard.appendChild(subtitle);
     }
 
     async function loadRequest() {
@@ -44,9 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const response = await fetch(getApiUrl("request_details", {
-                id: requestId,
-                user_id: currentUser?.id || undefined
+            const response = await authFetch(getApiUrl("request_details", {
+                id: requestId
             }));
             const result = await response.json();
 
@@ -187,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
             && canShowEditRequestButton(currentUser, request);
 
         if (canEdit) {
-            editBtn.href = `create-request.html?id=${request.id}`;
+            editBtn.href = `create-request.html?id=${encodeURIComponent(String(request.id ?? ""))}`;
             editBtn.hidden = false;
         } else {
             editBtn.hidden = true;
@@ -250,15 +257,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 commentCard.classList.add("comment-card-donor");
             }
 
-            commentCard.innerHTML = `
-                <div class="comment-card-header">
-                    <strong>${comment.name}</strong>
-                    ${Number(comment.is_donor) === 1 ? '<span class="donor-badge">Донор</span>' : ""}
-                    <span>${comment.created_at}</span>
-                </div>
-                <p>${comment.text}</p>
-                ${Number(comment.is_donor) === 1 && comment.contact_phone ? `<a class="comment-phone" href="${buildTelHref(comment.contact_phone)}">Телефон: ${comment.contact_phone}</a>` : ""}
-            `;
+            const telHref = buildTelHref(comment.contact_phone);
+            const header = document.createElement("div");
+            header.className = "comment-card-header";
+
+            const name = document.createElement("strong");
+            name.textContent = String(comment.name || "");
+            header.appendChild(name);
+
+            if (Number(comment.is_donor) === 1) {
+                const donorBadge = document.createElement("span");
+                donorBadge.className = "donor-badge";
+                donorBadge.textContent = "Донор";
+                header.appendChild(donorBadge);
+            }
+
+            const createdAt = document.createElement("span");
+            createdAt.textContent = String(comment.created_at || "");
+            header.appendChild(createdAt);
+
+            const text = document.createElement("p");
+            text.textContent = String(comment.text || "");
+
+            commentCard.appendChild(header);
+            commentCard.appendChild(text);
+
+            if (Number(comment.is_donor) === 1 && telHref) {
+                const donorPhone = document.createElement("a");
+                donorPhone.className = "comment-phone";
+                donorPhone.href = telHref;
+                donorPhone.textContent = `Телефон: ${String(comment.contact_phone || "")}`;
+                commentCard.appendChild(donorPhone);
+            }
 
             commentsList.appendChild(commentCard);
         });
