@@ -567,4 +567,9 @@
     .auth-form-row > div:last-child label {
         margin-top: 14px;
     }
+
+    .auth-page .header .container,
+    .auth-page .nav-container {
+        width: 90%;
+    }
 }

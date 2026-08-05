@@ -480,6 +480,15 @@
         align-items: flex-start;
     }
 
+    .welcome-hero-cta {
+        width: 100%;
+    }
+
+    .welcome-hero-cta .btn {
+        flex: 1 1 100%;
+        text-align: center;
+    }
+
     .welcome-toolbar {
         flex-direction: column;
         align-items: stretch;
@@ -487,5 +496,16 @@
 
     .welcome-toolbar select {
         width: 100%;
+    }
+
+    .welcome-stats-inner {
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        text-align: center;
+    }
+
+    .welcome-quick-grid {
+        grid-template-columns: 1fr;
     }
 }

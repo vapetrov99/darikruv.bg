@@ -194,13 +194,69 @@ a {
 
 @media (max-width: 768px) {
     .nav-container {
-        flex-direction: column;
-        gap: 15px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .nav-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        margin-left: auto;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        background: #fff;
+        color: #222;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .nav-toggle:focus-visible {
+        outline: 2px solid #c62828;
+        outline-offset: 2px;
+    }
+
+    .nav-toggle-bars {
+        display: block;
+        width: 18px;
+        height: 2px;
+        background: currentColor;
+        box-shadow: 0 -6px 0 currentColor, 0 6px 0 currentColor;
     }
 
     .nav {
-        flex-wrap: wrap;
-        justify-content: center;
+        display: none !important;
+        width: 100%;
+        flex-basis: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+        padding: 8px 0 4px;
+    }
+
+    .nav.is-open {
+        display: flex !important;
+    }
+
+    .nav a,
+    .nav .btn-nav,
+    .nav .auth-user-nav {
+        width: 100%;
+        padding: 12px 10px;
+        border-radius: 8px;
+    }
+
+    .nav a:hover,
+    .nav a.nav-active {
+        background: #fff0f0;
+    }
+
+    .nav .btn-nav {
+        text-align: center;
     }
 
     .hero-text h2 {
@@ -213,6 +269,16 @@ a {
 
     .hero-buttons {
         justify-content: center;
+    }
+
+    .logo {
+        font-size: 22px;
+    }
+}
+
+@media (min-width: 769px) {
+    .nav-toggle {
+        display: none !important;
     }
 }
 

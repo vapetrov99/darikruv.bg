@@ -236,3 +236,55 @@ function requireAdmin(redirectTo = "welcome.html") {
 
     return true;
 }
+
+function initMobileNav() {
+    const container = document.querySelector(".nav-container");
+    const nav = container ? container.querySelector(".nav") : null;
+    if (!container || !nav || container.querySelector(".nav-toggle")) {
+        return;
+    }
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "nav-toggle";
+    toggle.setAttribute("aria-label", "Menu");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", "site-nav");
+    if (!nav.id) {
+        nav.id = "site-nav";
+    }
+    toggle.innerHTML = '<span class="nav-toggle-bars" aria-hidden="true"></span>';
+
+    const logo = container.querySelector(".logo");
+    if (logo && logo.nextSibling) {
+        container.insertBefore(toggle, logo.nextSibling);
+    } else {
+        container.appendChild(toggle);
+    }
+
+    const setOpen = (open) => {
+        nav.classList.toggle("is-open", open);
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        toggle.setAttribute("aria-label", open ? "Close menu" : "Menu");
+    };
+
+    toggle.addEventListener("click", () => {
+        setOpen(!nav.classList.contains("is-open"));
+    });
+
+    nav.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => setOpen(false));
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            setOpen(false);
+        }
+    });
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initMobileNav);
+} else {
+    initMobileNav();
+}
