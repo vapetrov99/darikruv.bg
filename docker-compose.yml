@@ -23,6 +23,9 @@ services:
       MYSQL_DATABASE: darikruv
     ports:
       - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -36,3 +39,6 @@ services:
       PMA_PASSWORD: root
     depends_on:
       - mysql
+
+volumes:
+  mysql_data:
